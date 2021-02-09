@@ -3,6 +3,7 @@ use std::{
     collections::HashMap,
     future::Future,
     pin::Pin,
+    sync::Arc,
 };
 
 use crate::{client::Client, messages::Message, Error, Result, QQ};
@@ -10,23 +11,36 @@ use futures_util::StreamExt;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite;
 
-pub trait Handler {
-    fn handle(&self, msg: Message) -> Pin<Box<dyn Future<Output = ()> + Send>>;
+pub struct Context {
+    app: Arc<App>,
+}
+impl Context {
+    pub fn new(app: Arc<App>) -> Self {
+        Self { app }
+    }
+    pub fn data<T: 'static>(&self) -> Option<Arc<T>> {
+        let any_obj = self.app.data.get(&TypeId::of::<Arc<T>>())?.clone();
+        any_obj.downcast_ref::<Arc<T>>().cloned()
+    }
 }
 
-impl<Func, Fut> Handler for Func
+pub trait Handler: Send + Sync {
+    fn call(&self, message: Message, ctx: Context) -> Pin<Box<dyn Future<Output = bool> + Send>>;
+}
+
+impl<F, R> Handler for F
 where
-    Func: Fn(Message) -> Fut,
-    Fut: Future<Output = ()> + Send + 'static,
+    F: Fn(Message, Context) -> R + Send + Sync,
+    R: Future<Output = bool> + Send + 'static,
 {
-    fn handle(&self, msg: Message) -> Pin<Box<dyn Future<Output = ()> + Send>> {
-        Box::pin((self)(msg))
+    fn call(&self, message: Message, ctx: Context) -> Pin<Box<dyn Future<Output = bool> + Send>> {
+        Box::pin((self)(message, ctx))
     }
 }
 
 pub struct AppBuilder {
     clients: Vec<Client>,
-    data: HashMap<TypeId, Box<dyn Any>>,
+    data: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
     handlers: Vec<Box<dyn Handler>>,
 }
 impl AppBuilder {
@@ -53,8 +67,20 @@ impl AppBuilder {
         Ok(self)
     }
 
-    pub fn handler(mut self, f: impl Handler + 'static) -> Self {
+    pub fn handler<F>(mut self, f: F) -> Self
+    where
+        F: Handler + Send + 'static,
+    {
         self.handlers.push(Box::new(f));
+        self
+    }
+
+    pub fn data<T>(mut self, data: T) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
+        self.data
+            .insert(TypeId::of::<Arc<T>>(), Box::new(Arc::new(data)));
         self
     }
 
@@ -69,7 +95,7 @@ impl AppBuilder {
 
 pub struct App {
     clients: Vec<Client>,
-    data: HashMap<TypeId, Box<dyn Any>>,
+    data: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
     handlers: Vec<Box<dyn Handler>>,
 }
 impl App {
@@ -78,9 +104,10 @@ impl App {
     }
 
     pub async fn run(self) -> Result<()> {
+        let app = Arc::new(self);
         let (tx, mut rx) = mpsc::channel(8192);
         let mut handlers = vec![];
-        for client in self.clients {
+        for client in app.clients.iter() {
             for (qq, _session) in client.bound_accounts() {
                 let mut ws_stream = client.ws_connect(*qq).await?;
                 let tx = tx.clone();
@@ -117,10 +144,16 @@ impl App {
         std::mem::drop(tx);
         // start receiver
         while let Some(msg) = rx.recv().await {
-            info!("msg recv: {:?}", msg);
-            for handler in self.handlers.iter() {
-                tokio::spawn(handler.handle(msg.clone()));
-            }
+            let app = app.clone();
+            let msg = msg.clone();
+            // 每条消息单独起一个 task
+            tokio::spawn(async move {
+                for handler in app.handlers.iter() {
+                    if handler.call(msg.clone(), Context::new(app.clone())).await {
+                        break;
+                    }
+                }
+            });
         }
         Ok(())
     }
