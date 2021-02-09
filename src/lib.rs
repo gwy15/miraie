@@ -12,6 +12,7 @@ pub mod messages;
 pub mod miraie;
 
 pub use error::{Error, Result};
+pub use messages::{Message, MessageBlock};
 pub use miraie::{App, AppBuilder, Context};
 
 pub type QQ = u64;
