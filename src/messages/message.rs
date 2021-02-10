@@ -1,6 +1,7 @@
 #[macro_use]
 use super::{friend, group, utils, Error};
 use crate::{DateTime, QQ};
+use serde::{ser::SerializeMap, Serialize, Serializer};
 use serde_json::Value;
 use std::{convert::TryFrom, str::FromStr};
 
@@ -33,13 +34,16 @@ pub struct Meta {
     pub time: DateTime,
 }
 
+/// 接收、发送消息都是走这个结构体
 #[derive(Debug, Clone)]
 pub enum MessageBlock {
     Plain(String),
     Xml(String),
     Image {
+        /// 对于发送，设置为空即可
         id: String,
         url: String,
+        /// 对于发送，设置为空即可
         path: Option<String>,
     },
     App(String),
@@ -72,6 +76,33 @@ impl TryFrom<Value> for MessageBlock {
             t => return Err(Error::format(format!("MessageBlock type unknown: {}", t))),
         };
         Ok(block)
+    }
+}
+impl Serialize for MessageBlock {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        match self {
+            MessageBlock::Plain(text) => {
+                map.serialize_entry("type", "Plain")?;
+                map.serialize_entry("text", text)?;
+            }
+            MessageBlock::Xml(xml) => {
+                map.serialize_entry("type", "Xml")?;
+                map.serialize_entry("xml", xml)?;
+            }
+            MessageBlock::Image { id, url, path } => {
+                map.serialize_entry("type", "Image")?;
+                map.serialize_entry("url", url)?;
+            }
+            MessageBlock::App(s) => {
+                map.serialize_entry("type", "App")?;
+                map.serialize_entry("app", s)?;
+            }
+        }
+        map.end()
     }
 }
 

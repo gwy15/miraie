@@ -18,6 +18,9 @@ pub enum Error {
 
     #[error("mpsc channel error: {0}")]
     ChannelError(Box<dyn std::error::Error + Send>),
+
+    #[error("This method ({0}) is not implemented yet.")]
+    Unimplemented(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

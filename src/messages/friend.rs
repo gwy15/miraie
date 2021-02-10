@@ -4,7 +4,10 @@ use serde_json::{from_value, Value};
 use std::convert::TryFrom;
 
 use super::{Error, MessageBlock, Meta};
-use crate::QQ;
+use crate::{
+    client::{Client, Replyable},
+    QQ,
+};
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -66,4 +69,16 @@ pub struct Sender {
     pub qq: QQ,
     pub nickname: String,
     pub remark: String,
+}
+
+#[async_trait::async_trait]
+impl Replyable for Sender {
+    async fn reply_to(
+        &self,
+        from_qq: QQ,
+        message: Vec<MessageBlock>,
+        client: Client,
+    ) -> crate::Result<i64> {
+        client.send_friend_message(from_qq, self.qq, message).await
+    }
 }

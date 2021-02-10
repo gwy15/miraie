@@ -1,26 +1,47 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    fmt::{Debug, Error as FmtError, Formatter},
     future::Future,
     pin::Pin,
     sync::Arc,
 };
 
-use crate::{client::Client, messages::Message, Error, Result, QQ};
+use super::client::Replyable;
+use crate::{client::Client, messages::Message, Error, MessageBlock, Result, QQ};
 use futures_util::StreamExt;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite;
 
+#[derive(Clone)]
 pub struct Context {
     app: Arc<App>,
+    pub client: Client,
+    pub receiver: QQ,
 }
 impl Context {
-    pub fn new(app: Arc<App>) -> Self {
-        Self { app }
+    pub fn new(app: Arc<App>, client: Client, receiver: QQ) -> Self {
+        Self {
+            app,
+            client,
+            receiver,
+        }
     }
     pub fn data<T: 'static>(&self) -> Option<Arc<T>> {
         let any_obj = self.app.data.get(&TypeId::of::<Arc<T>>())?.clone();
         any_obj.downcast_ref::<Arc<T>>().cloned()
+    }
+
+    /// 返回回复的消息 id
+    pub async fn reply(&self, reply_to: impl Replyable, message: Vec<MessageBlock>) -> Result<i64> {
+        reply_to
+            .reply_to(self.receiver, message, self.client.clone())
+            .await
+    }
+}
+impl Debug for Context {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), FmtError> {
+        f.write_fmt(format_args!("Context {{ receiver: {} }}", self.receiver))
     }
 }
 
@@ -107,10 +128,12 @@ impl App {
         let app = Arc::new(self);
         let (tx, mut rx) = mpsc::channel(8192);
         let mut handlers = vec![];
-        for client in app.clients.iter() {
+        for client in app.clients.iter().cloned() {
             for (qq, _session) in client.bound_accounts() {
-                let mut ws_stream = client.ws_connect(*qq).await?;
+                let mut ws_stream = client.ws_connect(qq).await?;
                 let tx = tx.clone();
+                let app = app.clone();
+                let client = client.clone();
                 let handler = tokio::spawn(async move {
                     while let Some(msg) = ws_stream.next().await {
                         let msg = msg?;
@@ -119,7 +142,8 @@ impl App {
                                 debug!("received text: {}...", &text[..30]);
                                 match text.parse::<Message>() {
                                     Ok(msg) => {
-                                        tx.send(msg)
+                                        let ctx = Context::new(app.clone(), client.clone(), qq);
+                                        tx.send((msg, ctx))
                                             .await
                                             .map_err(|e| Error::ChannelError(Box::new(e)))?;
                                     }
@@ -143,13 +167,26 @@ impl App {
         }
         std::mem::drop(tx);
         // start receiver
-        while let Some(msg) = rx.recv().await {
+        while let Some((msg, ctx)) = rx.recv().await {
             let app = app.clone();
             let msg = msg.clone();
             // 每条消息单独起一个 task
             tokio::spawn(async move {
                 for handler in app.handlers.iter() {
-                    if handler.call(msg.clone(), Context::new(app.clone())).await {
+                    let should_break = async {
+                        let raw_fut = handler.call(msg.clone(), ctx.clone());
+                        // let catch_fut = raw_fut.catch_unwind();
+                        // match raw_fut.await {
+                        //     Ok(should_break) => should_break,
+                        //     Err(e) => {
+                        //         error!("panic happened.");
+                        //         false
+                        //     }
+                        // }
+                        raw_fut.await
+                    }
+                    .await;
+                    if should_break {
                         break;
                     }
                 }
