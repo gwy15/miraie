@@ -38,6 +38,7 @@ pub struct Meta {
 #[derive(Debug, Clone)]
 pub enum MessageBlock {
     Plain(String),
+    At(QQ),
     Xml(String),
     Image {
         /// 对于发送，设置为空即可
@@ -73,6 +74,11 @@ impl TryFrom<Value> for MessageBlock {
                 utils::remove_string(&mut value, "app")
                     .ok_or_else(|| Error::format("type App: app format wrong"))?,
             ),
+            "At" => MessageBlock::At(
+                utils::remove_i64(&mut value, "target")
+                    .ok_or_else(|| Error::format("type At: target format wrong"))?
+                    as QQ,
+            ),
             t => return Err(Error::format(format!("MessageBlock type unknown: {}", t))),
         };
         Ok(block)
@@ -100,6 +106,10 @@ impl Serialize for MessageBlock {
             MessageBlock::App(s) => {
                 map.serialize_entry("type", "App")?;
                 map.serialize_entry("app", s)?;
+            }
+            MessageBlock::At(target) => {
+                map.serialize_entry("type", "At")?;
+                map.serialize_entry("target", target)?;
             }
         }
         map.end()

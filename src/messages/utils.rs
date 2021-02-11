@@ -25,3 +25,10 @@ pub fn remove_string(v: &mut Value, name: &str) -> Option<String> {
         _ => None,
     }
 }
+
+pub fn remove_i64(v: &mut Value, name: &str) -> Option<i64> {
+    match v.as_object_mut()?.remove(name) {
+        Some(Value::Number(s)) => s.as_i64(),
+        _ => None,
+    }
+}

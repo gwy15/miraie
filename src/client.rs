@@ -165,6 +165,41 @@ impl Client {
         Ok(r.message_id)
     }
 
+    /// 发送群聊消息，返回消息 id
+    pub async fn send_group_message(
+        &self,
+        from_qq: QQ,
+        to_group: QQ,
+        message: Vec<MessageBlock>,
+    ) -> Result<i64> {
+        def_req! {
+            #[serde(rename = "sessionKey")]
+            session_key: String,
+            group: QQ,
+            #[serde(rename = "messageChain")]
+            message: Vec<MessageBlock>,
+        }
+        def_resp! {
+            msg: String,
+            #[serde(rename = "messageId")]
+            message_id: i64,
+        }
+
+        let r: Response = self
+            .post("/sendGroupMessage")
+            .json(&Request {
+                group: to_group,
+                session_key: self.session_key(from_qq)?,
+                message,
+            })
+            .send()
+            .await?
+            .json()
+            .await?;
+        r.ok()?;
+        Ok(r.message_id)
+    }
+
     pub async fn ws_connect(&self, qq: QQ) -> Result<WebSocketStream<TcpStream>> {
         let session = self.session_key(qq)?;
         let base_url = self.base_url.replace("https", "wss").replace("http", "ws");

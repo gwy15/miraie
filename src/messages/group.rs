@@ -1,5 +1,8 @@
 use super::{Error, MessageBlock, Meta};
-use crate::QQ;
+use crate::{
+    client::{Client, Replyable},
+    QQ,
+};
 use serde_json::{from_value, Value};
 use std::convert::TryFrom;
 
@@ -77,6 +80,20 @@ pub struct Sender {
     group_card: String,
     permission: Permission,
     group: Group,
+}
+
+#[async_trait::async_trait]
+impl Replyable for Sender {
+    async fn reply_to(
+        &self,
+        from_qq: QQ,
+        message: Vec<MessageBlock>,
+        client: Client,
+    ) -> crate::Result<i64> {
+        client
+            .send_group_message(from_qq, self.group.id, message)
+            .await
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
