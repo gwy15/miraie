@@ -1,8 +1,8 @@
 use std::fmt;
 
 /// QQ 号码
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct QQ(u64);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
+pub struct QQ(pub u64);
 
 impl fmt::Display for QQ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -1,10 +1,20 @@
-/// 好友私聊信息
-#[derive(Debug, Clone)]
-pub struct FriendMessage(String);
+use super::MessageChain;
+use crate::bot::QQ;
 
-impl std::convert::TryFrom<serde_json::Value> for FriendMessage {
-    type Error = crate::Error;
-    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
-        unimplemented!()
-    }
+/// 好友私聊信息
+#[derive(Debug, Clone, Deserialize)]
+pub struct FriendMessage {
+    sender: Sender,
+    #[serde(rename = "messageChain")]
+    message: MessageChain,
+}
+
+/// 私聊消息的发送者
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct Sender {
+    id: QQ,
+    /// 好友昵称
+    nickname: String,
+    /// 好友备注
+    remark: String,
 }

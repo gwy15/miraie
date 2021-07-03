@@ -1,3 +1,4 @@
+mod chain;
 mod event;
 mod friend;
 mod group;
@@ -12,6 +13,8 @@ pub use group::GroupMessage;
 use serde_json::Value;
 pub use stranger::StrangerMessage;
 pub use temp::TempMessage;
+
+pub use chain::MessageChain;
 
 use crate::Error;
 
@@ -38,14 +41,14 @@ impl TryFrom<Value> for Message {
             .and_then(|s| s.as_str())
             .ok_or_else(|| Error::format("type not found."))?;
         let msg = match t {
-            "FriendMessage" => Message::Friend(FriendMessage::try_from(value)?),
-            "GroupMessage" => Message::Group(GroupMessage::try_from(value)?),
-            "TempMessage" => Message::Temp(TempMessage::try_from(value)?),
-            "StrangerMessage" => Message::Stranger(StrangerMessage::try_from(value)?),
+            "FriendMessage" => Message::Friend(serde_json::from_value(value)?),
+            "GroupMessage" => Message::Group(serde_json::from_value(value)?),
+            "TempMessage" => Message::Temp(serde_json::from_value(value)?),
+            "StrangerMessage" => Message::Stranger(serde_json::from_value(value)?),
             "OtherClientMessage" => {
                 return Err(Error::format("Unsupported type: `OtherClientMessage`"));
             }
-            typename => Message::Event(Event::try_from((typename.to_string(), value))?),
+            _event_type => Message::Event(serde_json::from_value(value)?),
         };
         Ok(msg)
     }

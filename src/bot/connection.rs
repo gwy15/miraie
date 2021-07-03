@@ -97,7 +97,7 @@ impl Connection {
             WsMessage::Text(json) => serde_json::from_str(&json)?,
             _ => return Ok(()),
         };
-        debug!("received ws packet: {:?}", packet);
+        trace!("received ws packet: {:?}", packet);
         match packet.sync_id {
             // 如果是 request 的 response
             Some(sync_id) if sync_id > 0 => {
@@ -113,13 +113,17 @@ impl Connection {
                 };
                 return Ok(());
             }
+            // 否则尝试按照消息解析
             _ => {
                 let data = packet.data;
-                let message = Message::try_from(data)?;
-                if let Err(e) = self.message_channel.send(message) {
-                    warn!("failed to msg to channel: {:?}", e);
+                let message = Message::try_from(data).map_err(|e| {
+                    warn!("Failed to parse as message: {:?}", e);
+                    e
+                })?;
+                debug!("message = {:?}", message);
+                if self.message_channel.send(message).is_err() {
+                    warn!("no active receiver to receive message.");
                 }
-                // TODO:
                 Ok(())
             }
         }
