@@ -4,14 +4,14 @@ use crate::bot::QQ;
 /// 好友私聊信息
 #[derive(Debug, Clone, Deserialize)]
 pub struct FriendMessage {
-    sender: Sender,
+    sender: FriendMember,
     #[serde(rename = "messageChain")]
     message: MessageChain,
 }
 
 /// 私聊消息的发送者
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
-pub struct Sender {
+pub struct FriendMember {
     id: QQ,
     /// 好友昵称
     nickname: String,

@@ -1,5 +1,5 @@
-use super::{api::API, connection::Connection, QQ};
-use crate::{messages::Message, Result};
+use super::{connection::Connection, QQ};
+use crate::{messages::Message, Result, API};
 use serde_json::Value;
 use std::net::SocketAddr;
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -46,7 +46,7 @@ impl Bot {
 
     // pub async fn request<Request>(request: Request) -> Result<Request::Response>
     // where
-    //     Request: crate::bot::API,
+    //     Request: crate::API,
     // {
     //     unimplemented!()
     // }

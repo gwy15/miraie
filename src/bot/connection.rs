@@ -1,7 +1,7 @@
 use crate::{
-    bot::{api::API, SplitSink, SplitStream, WebsocketStream, WsMessage},
+    bot::{SplitSink, SplitStream, WebsocketStream, WsMessage},
     messages::Message,
-    Result,
+    Result, API,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::Deserialize;

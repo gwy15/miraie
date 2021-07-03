@@ -1,10 +1,8 @@
-mod api;
 mod basic_types;
 mod botapp;
 mod connection;
 mod utils;
 
-pub use api::API;
 pub use basic_types::*;
 pub use botapp::Bot;
 pub use connection::Connection;

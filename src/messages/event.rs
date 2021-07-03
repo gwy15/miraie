@@ -20,13 +20,13 @@ pub enum Event {
 
     /// 好友输入状态改变
     FriendInputStatusChangedEvent {
-        friend: friend::Sender,
+        friend: friend::FriendMember,
         /// 当前输出状态是否正在输入
         inputting: bool,
     },
     /// 好友昵称改变
     FriendNickChangedEvent {
-        friend: friend::Sender,
+        friend: friend::FriendMember,
         from: String,
         to: String,
     },
@@ -263,7 +263,7 @@ pub enum Event {
         #[serde(rename = "eventId")]
         event_id: i64,
         name: String,
-        friend: Option<friend::Sender>,
+        friend: Option<friend::FriendMember>,
         member: Option<group::GroupMember>,
         args: Vec<serde_json::Value>,
     },

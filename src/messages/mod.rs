@@ -1,20 +1,19 @@
 mod chain;
 mod event;
-mod friend;
-mod group;
+pub mod friend;
+pub mod group;
 mod stranger;
 mod temp;
 
 use std::convert::TryFrom;
 
+pub use chain::MessageChain;
 pub use event::Event;
 pub use friend::FriendMessage;
 pub use group::GroupMessage;
 use serde_json::Value;
 pub use stranger::StrangerMessage;
 pub use temp::TempMessage;
-
-pub use chain::MessageChain;
 
 use crate::Error;
 
