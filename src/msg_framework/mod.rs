@@ -1,3 +1,4 @@
+//! 核心事件框架
 mod app;
 mod func;
 mod requests;

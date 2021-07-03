@@ -1,3 +1,4 @@
+//! 跟群聊、群成员有关的模块
 use chrono::{DateTime, Utc};
 
 use super::MessageChain;

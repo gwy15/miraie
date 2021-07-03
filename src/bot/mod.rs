@@ -1,3 +1,4 @@
+//! bot 的实现
 mod basic_types;
 mod botapp;
 mod connection;

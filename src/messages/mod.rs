@@ -1,3 +1,4 @@
+//! mirai 传回的消息，群聊、私聊、事件等
 mod chain;
 mod event;
 pub mod friend;
@@ -7,7 +8,7 @@ mod temp;
 
 use std::convert::TryFrom;
 
-pub use chain::MessageChain;
+pub use chain::{MessageBlock, MessageChain};
 pub use event::Event;
 pub use friend::FriendMessage;
 pub use group::GroupMessage;
@@ -17,6 +18,7 @@ pub use temp::TempMessage;
 
 use crate::Error;
 
+/// 接收到的消息，可能是群消息、私聊消息、事件等
 #[derive(Debug, Clone)]
 pub enum Message {
     Friend(FriendMessage),

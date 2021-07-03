@@ -1,3 +1,4 @@
+//! 错误模块，提供 [`enum@Error`] 类型
 use thiserror::Error;
 
 #[derive(Debug, Error)]

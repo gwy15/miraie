@@ -44,7 +44,7 @@ impl Bot {
         Ok((bot, connection))
     }
 
-    /// 对 mirai bot 发送一个请求，默认超时 10s，如果需要调整超时，使用 [`request_timeout`]。
+    /// 对 mirai bot 发送一个请求，默认超时 10s，如果需要调整超时，使用 [`Self::request_timeout`]。
     pub async fn request<Request>(&self, request: Request) -> Result<Request::Response>
     where
         Request: crate::API + 'static,

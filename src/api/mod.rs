@@ -1,3 +1,5 @@
+//! 实现 mirai 提供的 API 接口，如拉取群列表等
+//! 
 pub mod friend_list;
 pub mod group_list;
 pub mod member_list;

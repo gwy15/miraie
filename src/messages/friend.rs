@@ -1,3 +1,4 @@
+//! 跟私聊、好友有关的模块
 use super::MessageChain;
 use crate::bot::QQ;
 
