@@ -10,6 +10,15 @@ pub enum Error {
 
     #[error("format error: {}", .reason)]
     Format { reason: String },
+
+    #[error("The connection to mirai bot is closed.")]
+    ConnectionClosed,
+
+    #[error("Request to mirai bot has timeout.")]
+    RequestTimeout,
+
+    #[error("Request error: code = {}, msg = {}", .code, msg)]
+    Request { code: i32, msg: String },
 }
 
 impl Error {

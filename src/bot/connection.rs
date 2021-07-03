@@ -1,7 +1,8 @@
 use crate::{
+    api::ApiRequest,
     bot::{SplitSink, SplitStream, WebsocketStream, WsMessage},
     messages::Message,
-    Result, API,
+    Result,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::Deserialize;
@@ -26,7 +27,7 @@ pub struct Connection {
     message_channel: broadcast::Sender<Message>,
 
     /// 接收 request 的通道
-    request_receive: mpsc::Receiver<(Box<dyn API>, RequestResponseChannel)>,
+    request_receive: mpsc::Receiver<(Box<dyn ApiRequest>, RequestResponseChannel)>,
     /// 保存返回 request 结果的 channel
     request_callback_channel: BTreeMap<i64, RequestResponseChannel>,
 
@@ -48,9 +49,9 @@ struct MiraiPacket {
 }
 
 impl Connection {
-    pub fn new(
+    pub(crate) fn new(
         ws: WebsocketStream,
-        request_receive: mpsc::Receiver<(Box<dyn API>, RequestResponseChannel)>,
+        request_receive: mpsc::Receiver<(Box<dyn ApiRequest>, RequestResponseChannel)>,
         message_channel: broadcast::Sender<Message>,
     ) -> Self {
         let (write, read) = ws.split();
@@ -129,7 +130,10 @@ impl Connection {
         }
     }
 
-    async fn on_request(&mut self, request: (Box<dyn API>, RequestResponseChannel)) -> Result<()> {
+    async fn on_request(
+        &mut self,
+        request: (Box<dyn ApiRequest>, RequestResponseChannel),
+    ) -> Result<()> {
         let (payload, ch) = request;
         // 生成 sync_id
         let sync_id = SYNC_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

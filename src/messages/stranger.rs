@@ -7,3 +7,12 @@ pub struct StrangerMessage {
     #[serde(rename = "messageChain")]
     message: MessageChain,
 }
+
+impl crate::msg_framework::FromRequest<crate::Bot> for StrangerMessage {
+    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match request.message {
+            crate::messages::Message::Stranger(msg) => Some(msg),
+            _ => None,
+        }
+    }
+}

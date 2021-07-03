@@ -18,3 +18,12 @@ pub struct FriendMember {
     /// 好友备注
     remark: String,
 }
+
+impl crate::msg_framework::FromRequest<crate::Bot> for FriendMessage {
+    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match request.message {
+            crate::messages::Message::Friend(f) => Some(f),
+            _ => None,
+        }
+    }
+}

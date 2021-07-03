@@ -8,3 +8,12 @@ pub struct TempMessage {
     #[serde(rename = "messageChain")]
     message: MessageChain,
 }
+
+impl crate::msg_framework::FromRequest<crate::Bot> for TempMessage {
+    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match request.message {
+            crate::messages::Message::Temp(msg) => Some(msg),
+            _ => None,
+        }
+    }
+}

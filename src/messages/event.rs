@@ -269,6 +269,15 @@ pub enum Event {
     },
 }
 
+impl crate::msg_framework::FromRequest<crate::Bot> for Event {
+    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match request.message {
+            crate::messages::Message::Event(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
 #[test]
 fn test_parse_event() {
     let s = r#"{

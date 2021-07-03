@@ -1,6 +1,7 @@
 use crate::messages::friend;
 
-pub type Request = ();
+#[derive(Serialize)]
+pub struct Request;
 
 pub type Response = Vec<friend::FriendMember>;
 
