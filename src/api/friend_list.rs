@@ -1,3 +1,7 @@
+//! 获取好友列表
+//!
+//! 使用此方法获取bot的好友列表
+
 use crate::messages::friend;
 
 #[derive(Serialize)]

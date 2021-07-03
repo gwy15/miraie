@@ -2,6 +2,7 @@ use anyhow::*;
 use log::*;
 use miraie::{
     api,
+    bot::QQ,
     messages::{Event, FriendMessage, GroupMessage},
     App, Bot,
 };
@@ -14,7 +15,18 @@ async fn on_private_msg(private_msg: FriendMessage, bot: Bot) {
     info!("private: {:?}", private_msg);
 
     let response = bot.request(api::friend_list::Request).await.unwrap();
-    info!("friend list response: {:?}", response);
+    info!("当前好友: {:#?}", response);
+
+    let response = bot.request(api::group_list::Request).await.unwrap();
+    info!("加的群：{:#?}", response);
+
+    let response = bot
+        .request(api::member_list::Request {
+            target: QQ(570197155),
+        })
+        .await
+        .unwrap();
+    info!("群里成员：{:#?}", response);
 }
 
 async fn on_event(event: Event) {

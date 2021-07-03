@@ -1,4 +1,6 @@
 pub mod friend_list;
+pub mod group_list;
+pub mod member_list;
 
 use serde::{Deserialize, Serialize};
 
