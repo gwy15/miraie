@@ -10,3 +10,10 @@ impl crate::msg_framework::FromRequest<crate::Bot> for GroupMessage {
         }
     }
 }
+
+impl std::convert::TryFrom<serde_json::Value> for GroupMessage {
+    type Error = crate::Error;
+    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
+        unimplemented!()
+    }
+}
