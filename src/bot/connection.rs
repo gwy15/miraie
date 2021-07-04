@@ -140,7 +140,7 @@ impl Connection {
         let sync_id = SYNC_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let payload_s = payload.encode(sync_id);
         debug!(
-            "sending request, sync_id = {}, payload = {:?}",
+            "sending request, sync_id = {}, payload = {}",
             sync_id, payload_s
         );
         // 把 request 发给 mirai

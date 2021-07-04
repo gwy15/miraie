@@ -1,5 +1,6 @@
 use crate::bot::QQ;
 use chrono::{DateTime, Utc};
+use std::fmt::{self, Write};
 
 /// 消息的一个分块，见
 /// <https://github.com/project-mirai/mirai-api-http/blob/master/docs/api/MessageType.md>
@@ -8,7 +9,7 @@ use chrono::{DateTime, Utc};
 pub enum MessageBlock {
     /// Source类型永远为chain的第一个元素
     Source {
-        /// 消息的识别号，用于引用回复（）
+        /// 消息的识别号，用于引用回复
         id: i64,
         #[serde(with = "chrono::serde::ts_seconds")]
         time: DateTime<Utc>,
@@ -124,11 +125,57 @@ pub enum MessageBlock {
     },
 }
 
+impl fmt::Display for MessageBlock {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MessageBlock::Source { .. } => Ok(()),
+            MessageBlock::Quote { origin, .. } => {
+                write!(f, "> {}\n", origin)
+            }
+            MessageBlock::At {
+                target, display, ..
+            } => {
+                if display.is_empty() {
+                    write!(f, "@{}", target)
+                } else {
+                    f.write_str(display.as_str())
+                }
+            }
+            MessageBlock::AtAll => f.write_str("@全体成员"),
+            MessageBlock::Face { name, .. } => write!(f, "[{}]", name),
+            MessageBlock::Text { text } => f.write_str(text),
+            MessageBlock::Image { .. } => f.write_str("[图片]"),
+            MessageBlock::FlushImage { .. } => f.write_str("[闪照]"),
+            MessageBlock::Voice { .. } => f.write_str("[语音消息]"),
+            MessageBlock::Xml { .. } => f.write_str("[XML消息]"),
+            MessageBlock::File { .. } => f.write_str("[文件消息]"),
+        }
+    }
+}
+
 /// 一条发送的消息，其可能由几个 [`MessageBlock`] 构成。
 ///
 /// 注意第一个 Block 一定是 Source
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct MessageChain(pub Vec<MessageBlock>);
+
+impl fmt::Display for MessageChain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let filtered = self
+            .0
+            .iter()
+            .filter(|block| !matches!(block, MessageBlock::Source { .. }))
+            .collect::<Vec<_>>();
+
+        for (i, block) in filtered.iter().enumerate() {
+            block.fmt(f)?;
+            if i != filtered.len() - 1 {
+                f.write_char(' ')?;
+            }
+        }
+        Ok(())
+    }
+}
 
 impl MessageChain {
     pub fn new() -> Self {
@@ -148,6 +195,17 @@ impl MessageChain {
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.0.push(MessageBlock::Text { text: text.into() });
         self
+    }
+
+    /// 获取消息的 message id
+    pub fn message_id(&self) -> Option<i64> {
+        if self.0.is_empty() {
+            return None;
+        }
+        match self.0[0] {
+            MessageBlock::Source { id, .. } => Some(id),
+            _ => None,
+        }
     }
 }
 

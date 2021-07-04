@@ -6,6 +6,7 @@ pub mod member_list;
 pub mod message_from_id;
 pub mod recall;
 pub mod send_friend_message;
+pub mod send_group_message;
 
 use serde::Serialize;
 

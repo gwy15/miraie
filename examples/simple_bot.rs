@@ -7,8 +7,18 @@ use miraie::{
 };
 use std::time::Duration;
 
-async fn on_group_msg(group_msg: GroupMessage) {
-    info!("group: {:?}", group_msg);
+async fn on_group_msg(group_msg: GroupMessage, bot: Bot) -> anyhow::Result<()> {
+    info!("group msg: {:?}", group_msg.message.to_string());
+    if group_msg.message.to_string() == "ping" {
+        bot.request(api::send_group_message::Request {
+            target: group_msg.sender.group.id,
+            message: MessageChain::new().text("pong~"),
+            quote: group_msg.message.message_id(),
+            // quote: None,
+        })
+        .await?;
+    }
+    Ok(())
 }
 
 async fn on_private_msg(private_msg: FriendMessage, bot: Bot) -> anyhow::Result<()> {
