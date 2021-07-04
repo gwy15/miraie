@@ -74,7 +74,7 @@ impl Bot {
             Ok(Err(_)) => Err(Error::ConnectionClosed),
             Err(_elapsed) => Err(Error::RequestTimeout),
         }?;
-        // 这里拿到的是 { code, msg, data }
+        // 这里拿到的是 { code, msg, data? }
         let response = Request::process_response(value)?;
         Ok(response)
     }

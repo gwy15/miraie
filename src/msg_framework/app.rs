@@ -3,6 +3,20 @@ use tokio::sync::broadcast;
 
 use super::{func::Func, FromRequest, Request};
 
+pub trait Return {
+    fn on_return(self);
+}
+impl Return for () {
+    fn on_return(self) {}
+}
+impl Return for Result<(), anyhow::Error> {
+    fn on_return(self) {
+        if let Err(e) = self {
+            warn!("handler exec failed: {:?}", e);
+        }
+    }
+}
+
 /// 对一个 App 行为的抽象
 ///
 /// App 需要提供一个 broadcast 类型的通信信道。
@@ -12,11 +26,12 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
 
     fn event_bus(&self) -> broadcast::Sender<Self::Message>;
 
-    fn handler<F, I, Fut, O>(self, f: F) -> Self
+    fn handler<F, I, Fut>(self, f: F) -> Self
     where
         F: Func<I, Fut>,
-        Fut: Future<Output = O> + Send,
         I: FromRequest<Self> + Send + 'static,
+        Fut: Future + Send,
+        Fut::Output: Return + Send,
     {
         let receiver = self.event_bus().subscribe();
         let app = self.clone();
@@ -35,9 +50,8 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
                         };
                         if let Some(input) = I::from_request(request) {
                             let fut = async move {
-                                let _ret = (f).call(input).await;
-                                // ignore O for now
-                                // TODO: add a Return trait
+                                let ret = (f).call(input).await;
+                                ret.on_return();
                             };
                             tokio::spawn(fut);
                         };

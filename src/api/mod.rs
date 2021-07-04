@@ -4,26 +4,17 @@ pub mod friend_list;
 pub mod group_list;
 pub mod member_list;
 pub mod message_from_id;
-pub mod send_friend_message;
 pub mod recall;
+pub mod send_friend_message;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-use crate::{Error, Result};
+use crate::Result;
 
 pub trait API: ApiRequest {
     type Response: serde::de::DeserializeOwned;
 
-    fn process_response(value: serde_json::Value) -> Result<Self::Response> {
-        let resp: ApiResponseData<Self::Response> = serde_json::from_value(value)?;
-        if resp.code != 0 {
-            return Err(Error::Request {
-                code: resp.code,
-                msg: resp.msg,
-            });
-        }
-        Ok(resp.data)
-    }
+    fn process_response(value: serde_json::Value) -> Result<Self::Response>;
 }
 
 /// 对应将请求序列化成 ws packet 的行为
@@ -48,19 +39,28 @@ struct ApiRequestData<T: Serialize> {
     content: T,
 }
 
-#[derive(Deserialize)]
-struct ApiResponseData<T> {
-    code: i32,
-    msg: String,
-    data: T,
-}
-
 #[macro_export]
 macro_rules! api {
-    (command=$cmd:literal, $req:path, $rsp:path) => {
-        $crate::api!(command = $cmd, subcommand = None, $req, $rsp);
+    (
+        command = $cmd:literal,
+        $req:path,
+        $rsp:path
+    ) => {
+        $crate::api!(
+            command = $cmd,
+            subcommand = None,
+            field = "data",
+            $req,
+            $rsp
+        );
     };
-    (command=$cmd:literal, subcommand=$sub_cmd:expr, $req:path, $rsp:path) => {
+    (
+        command = $cmd:literal,
+        subcommand = $sub_cmd:expr,
+        field = $field:tt,
+        $req:path,
+        $rsp:path
+    ) => {
         impl $crate::api::ApiRequest for $req {
             fn command(&self) -> &'static str {
                 $cmd
@@ -78,9 +78,48 @@ macro_rules! api {
                 serde_json::to_string(&request).unwrap()
             }
         }
+        // 定义返回的类型
+        crate::api!(@def_resp field = $field);
+
         impl $crate::api::API for $req {
             type Response = $rsp;
-            // fn request(self, )
+            fn process_response(value: serde_json::Value) -> $crate::Result<Self::Response> {
+                debug!("process value {:?} as response", value);
+                let resp: ApiResponseData::<$rsp> = serde_json::from_value(value)?;
+                if resp.code != 0 {
+                    return Err($crate::Error::Request {
+                        code: resp.code,
+                        msg: resp.msg,
+                    });
+                }
+                Ok(resp.data)
+            }
         }
     };
+    (@def_resp field = "data") => {
+        #[derive(Deserialize)]
+        struct ApiResponseData<T> {
+            code: i32,
+            msg: String,
+            data: T,
+        }
+    };
+    (@def_resp field = "flatten") => {
+        #[derive(Deserialize)]
+        struct ApiResponseData<T> {
+            code: i32,
+            msg: String,
+            #[serde(flatten)]
+            data: T,
+        }
+    };
+    (@def_resp field = "default") => {
+        #[derive(Deserialize)]
+        struct ApiResponseData<T> {
+            code: i32,
+            msg: String,
+            #[serde(default)]
+            data: T,
+        }
+    }
 }

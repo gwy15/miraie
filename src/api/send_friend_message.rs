@@ -22,4 +22,10 @@ pub struct Response {
     pub message_id: i64,
 }
 
-crate::api!(command = "sendFriendMessage", Request, Response);
+crate::api!(
+    command = "sendFriendMessage",
+    subcommand = None,
+    field = "flatten",
+    Request,
+    Response
+);

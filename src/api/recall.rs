@@ -7,7 +7,13 @@ pub struct Request {
     pub message_id: i64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Response;
 
-crate::api!(command = "recall", Request, Response);
+crate::api!(
+    command = "recall",
+    subcommand = None,
+    field = "default",
+    Request,
+    Response
+);

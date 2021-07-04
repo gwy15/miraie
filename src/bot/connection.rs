@@ -102,6 +102,7 @@ impl Connection {
         match packet.sync_id {
             // 如果是 request 的 response
             Some(sync_id) if sync_id > 0 => {
+                debug!("received packet with sync_id = {}", sync_id);
                 match self.request_callback_channel.remove(&sync_id) {
                     Some(ch) => {
                         if ch.send(packet.data).is_err() {
@@ -138,6 +139,10 @@ impl Connection {
         // 生成 sync_id
         let sync_id = SYNC_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let payload_s = payload.encode(sync_id);
+        debug!(
+            "sending request, sync_id = {}, payload = {:?}",
+            sync_id, payload_s
+        );
         // 把 request 发给 mirai
         self.write.send(WsMessage::Text(payload_s)).await?;
         // 保存返回结果的 channel
