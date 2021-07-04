@@ -1,5 +1,10 @@
-use super::{connection::Connection, QQ};
-use crate::{api::ApiRequest, messages::Message, Error, Result};
+use super::{connection::Connection, streams::MessageStream, QQ};
+use crate::{
+    api::ApiRequest,
+    messages::{Event, FriendMessage, GroupMessage, Message},
+    Error, Result,
+};
+use futures::{Stream, StreamExt};
 use serde_json::Value;
 use std::{net::SocketAddr, time::Duration};
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -21,6 +26,19 @@ impl crate::msg_framework::App for Bot {
 }
 
 impl Bot {
+    /// 建立一个 bot，会在这里建立跟服务器的 websocket 连接。
+    ///
+    /// # 参数
+    /// - addr: mirai 服务器的地址，需要开启 websocket 的 adapter
+    /// - verify_key: 鉴权 key
+    /// - qq：机器人的 qq 号
+    ///
+    /// # Example
+    /// ```no_run
+    /// let (bot, conn) = Bot::new(addr, verify_key, qq).await?;
+    /// bot.handler(handler);
+    /// conn.run().await?;
+    /// ```
     pub async fn new(
         addr: SocketAddr,
         verify_key: impl Into<String>,
@@ -53,6 +71,7 @@ impl Bot {
         self.request_timeout(request, Duration::from_secs(10)).await
     }
 
+    /// 对 mirai bot 发送一个请求，带有自定义超时
     pub async fn request_timeout<Request>(
         &self,
         request: Request,
@@ -77,6 +96,41 @@ impl Bot {
         // 这里拿到的是 { code, msg, data? }
         let response = Request::process_response(value)?;
         Ok(response)
+    }
+
+    /// 获取一个 [`MessageStream`]，其实现了 `Stream<Item = Message>`
+    pub fn messages(&self) -> MessageStream {
+        MessageStream::new(self.message_channel.subscribe())
+    }
+
+    /// 获取一个全部群聊消息的 stream
+    pub fn group_messages(&self) -> impl Stream<Item = GroupMessage> {
+        self.messages().filter_map(|msg| async move {
+            match msg {
+                Message::Group(msg) => Some(msg),
+                _ => None,
+            }
+        })
+    }
+
+    /// 获取一个私聊消息的 stream
+    pub fn friend_messages(&self) -> impl Stream<Item = FriendMessage> {
+        self.messages().filter_map(|msg| async move {
+            match msg {
+                Message::Friend(msg) => Some(msg),
+                _ => None,
+            }
+        })
+    }
+
+    /// 获取一个事件的 stream
+    pub fn events(&self) -> impl Stream<Item = Event> {
+        self.messages().filter_map(|msg| async move {
+            match msg {
+                Message::Event(evt) => Some(evt),
+                _ => None,
+            }
+        })
     }
 }
 

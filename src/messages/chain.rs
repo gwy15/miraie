@@ -207,6 +207,17 @@ impl MessageChain {
             _ => None,
         }
     }
+
+    /// 尝试把 message 按照确认取消匹配
+    pub fn as_confirm(&self) -> Option<bool> {
+        match self.to_string().to_lowercase().trim() {
+            "好" | "好的" | "是" | "确认" | "真的" | "ok" | "yes" | "y" | "√" | "1" => {
+                Some(true)
+            }
+            "不" | "否" | "算了" | "取消" | "no" | "n" | "x" | "0" => Some(false),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

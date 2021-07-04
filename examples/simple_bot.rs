@@ -1,4 +1,5 @@
 use anyhow::*;
+use futures::StreamExt;
 use log::*;
 use miraie::{
     api,
@@ -6,22 +7,53 @@ use miraie::{
     App, Bot,
 };
 use std::time::Duration;
+use tokio::time::timeout;
 
-async fn on_group_msg(group_msg: GroupMessage, bot: Bot) -> anyhow::Result<()> {
-    info!("group msg: {:?}", group_msg.message.to_string());
+async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     if group_msg.message.to_string() == "ping" {
         bot.request(api::send_group_message::Request {
             target: group_msg.sender.group.id,
-            message: MessageChain::new().text("pong~"),
+            message: MessageChain::new().text("pong"),
             quote: group_msg.message.message_id(),
-            // quote: None,
         })
         .await?;
     }
     Ok(())
 }
 
-async fn on_private_msg(private_msg: FriendMessage, bot: Bot) -> anyhow::Result<()> {
+async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
+    if group_msg.message.to_string() == "打嗝" {
+        group_msg
+            .reply(MessageChain::new().text("真的要打嗝吗？"), &bot)
+            .await?;
+
+        let mut reply = group_msg
+            .followed_sender_messages(&bot)
+            .filter_map(|msg| async move { msg.message.as_confirm() })
+            .boxed();
+        match timeout(Duration::from_secs(5), reply.next()).await {
+            Ok(Some(confirm)) => {
+                if confirm {
+                    group_msg
+                        .reply(MessageChain::new().text("嗝~"), &bot)
+                        .await?;
+                } else {
+                    group_msg
+                        .reply(MessageChain::new().text("那就不打了"), &bot)
+                        .await?;
+                }
+            }
+            _ => {
+                group_msg
+                    .reply(MessageChain::new().text("算了不打了"), &bot)
+                    .await?;
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn on_private_msg(private_msg: FriendMessage, bot: Bot) -> Result<()> {
     info!("private: {:?}", private_msg);
 
     let id = bot
@@ -55,7 +87,8 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    bot.handler(on_group_msg)
+    bot.handler(on_group_msg_ping_pong)
+        .handler(on_group_msg_confirm)
         .handler(on_private_msg)
         .handler(on_event);
 
