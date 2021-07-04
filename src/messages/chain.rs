@@ -53,7 +53,8 @@ pub enum MessageBlock {
     },
 
     /// 文字消息
-    Plain { text: String },
+    #[serde(rename = "Plain")]
+    Text { text: String },
 
     /// 图片消息
     ///
@@ -126,7 +127,29 @@ pub enum MessageBlock {
 /// 一条发送的消息，其可能由几个 [`MessageBlock`] 构成。
 ///
 /// 注意第一个 Block 一定是 Source
-pub type MessageChain = Vec<MessageBlock>;
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+pub struct MessageChain(pub Vec<MessageBlock>);
+
+impl MessageChain {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+    pub fn at(mut self, qq: QQ) -> Self {
+        self.0.push(MessageBlock::At {
+            target: qq,
+            display: String::new(),
+        });
+        self
+    }
+    pub fn at_all(mut self) -> Self {
+        self.0.push(MessageBlock::AtAll);
+        self
+    }
+    pub fn text(mut self, text: impl Into<String>) -> Self {
+        self.0.push(MessageBlock::Text { text: text.into() });
+        self
+    }
+}
 
 #[cfg(test)]
 mod tests {

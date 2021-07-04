@@ -34,6 +34,7 @@ impl Bot {
 
         let (request_tx, request_rx) = mpsc::channel(4096);
         let (ws_stream, _) = async_tungstenite::tokio::connect_async(url).await?;
+        debug!("bot {} connected.", qq);
         let connection = super::Connection::new(ws_stream, request_rx, tx.clone());
 
         let bot = Bot {

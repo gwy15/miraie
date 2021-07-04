@@ -1,8 +1,11 @@
 //! 实现 mirai 提供的 API 接口，如拉取群列表等
-//! 
+//!
 pub mod friend_list;
 pub mod group_list;
 pub mod member_list;
+pub mod message_from_id;
+pub mod send_friend_message;
+pub mod recall;
 
 use serde::{Deserialize, Serialize};
 

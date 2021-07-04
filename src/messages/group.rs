@@ -7,41 +7,41 @@ use crate::bot::QQ;
 /// 群聊信息
 #[derive(Debug, Clone, Deserialize)]
 pub struct GroupMessage {
-    sender: GroupMember,
+    pub sender: GroupMember,
 
     #[serde(rename = "messageChain")]
-    message: MessageChain,
+    pub message: MessageChain,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupMember {
-    id: QQ,
+    pub id: QQ,
 
-    member_name: String,
+    pub member_name: String,
 
     /// 群主给的特殊头衔
-    special_title: String,
+    pub special_title: String,
 
     /// 权限
-    permission: Permission,
+    pub permission: Permission,
 
     /// 加群的时间
     #[serde(rename = "joinTimestamp", with = "chrono::serde::ts_seconds_option")]
-    join: Option<DateTime<Utc>>,
+    pub join: Option<DateTime<Utc>>,
 
     /// 最后一次发言的时间
     #[serde(
         rename = "lastSpeakTimestamp",
         with = "chrono::serde::ts_seconds_option"
     )]
-    last_speak: Option<DateTime<Utc>>,
+    pub last_speak: Option<DateTime<Utc>>,
 
     // /// 剩余的禁言时间
     // #[serde(rename = "muteTimeRemaining", with = "chrono::serde::ts_seconds")]
     // mute_remaining: Duration,
     /// 群的信息
-    group: Group,
+    pub group: Group,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
@@ -58,11 +58,11 @@ pub enum Permission {
 /// 群信息
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Group {
-    id: QQ,
+    pub id: QQ,
     /// 群名
-    name: String,
+    pub name: String,
     /// bot 在群里的权限
-    permission: Permission,
+    pub permission: Permission,
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for GroupMessage {

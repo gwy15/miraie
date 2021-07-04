@@ -2,31 +2,33 @@ use anyhow::*;
 use log::*;
 use miraie::{
     api,
-    bot::QQ,
-    messages::{Event, FriendMessage, GroupMessage},
+    messages::{Event, FriendMessage, GroupMessage, MessageChain},
     App, Bot,
 };
+use std::time::Duration;
 
 async fn on_group_msg(group_msg: GroupMessage) {
     info!("group: {:?}", group_msg);
 }
 
-async fn on_private_msg(private_msg: FriendMessage, bot: Bot) {
+async fn on_private_msg(private_msg: FriendMessage, bot: Bot) -> anyhow::Result<()> {
     info!("private: {:?}", private_msg);
 
-    let response = bot.request(api::friend_list::Request).await.unwrap();
-    info!("当前好友: {:#?}", response);
-
-    let response = bot.request(api::group_list::Request).await.unwrap();
-    info!("加的群：{:#?}", response);
-
-    let response = bot
-        .request(api::member_list::Request {
-            target: QQ(570197155),
+    let id = bot
+        .request(api::send_friend_message::Request {
+            target: private_msg.sender.id,
+            quote: None,
+            message: MessageChain::new().text("在在在"),
         })
-        .await
-        .unwrap();
-    info!("群里成员：{:#?}", response);
+        .await?;
+    let message_id = id.message_id;
+    info!("response message id: {:?}", message_id);
+
+    tokio::time::sleep(Duration::from_secs(5)).await;
+    info!("开始撤回");
+
+    bot.request(api::recall::Request { message_id }).await?;
+    Ok(())
 }
 
 async fn on_event(event: Event) {
