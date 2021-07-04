@@ -10,7 +10,7 @@ pub mod error;
 pub mod messages;
 mod msg_framework;
 
-pub use api::API;
+pub use api::Api;
 pub use bot::Bot;
 pub use error::{Error, Result};
 pub use msg_framework::App;
@@ -22,6 +22,6 @@ pub mod prelude {
         api,
         bot::QQ,
         messages::{self, FriendMessage, GroupMessage, Message},
-        App, Bot, API,
+        Api, App, Bot,
     };
 }

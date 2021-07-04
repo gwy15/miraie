@@ -13,7 +13,7 @@ use serde::Serialize;
 use crate::Result;
 
 /// 所有发往 mirai 的请求都实现这个 trait
-pub trait API: ApiRequest {
+pub trait Api: ApiRequest {
     /// 请求返回的类型
     type Response: serde::de::DeserializeOwned;
 
@@ -84,7 +84,7 @@ macro_rules! api {
         // 定义返回的类型
         crate::api!(@def_resp field = $field);
 
-        impl $crate::api::API for $req {
+        impl $crate::api::Api for $req {
             type Response = $rsp;
             fn process_response(value: serde_json::Value) -> $crate::Result<Self::Response> {
                 debug!("process value {:?} as response", value);

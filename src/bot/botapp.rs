@@ -42,9 +42,9 @@ impl Bot {
     ///     "verify_key",
     ///     QQ(12345)
     /// ).await?;
-    /// 
+    ///
     /// async fn handler(msg: Message) {}
-    /// 
+    ///
     /// bot.handler(handler);
     /// conn.run().await?;
     /// # Result::<(), miraie::Error>::Ok(()) });
@@ -76,7 +76,7 @@ impl Bot {
     /// 对 mirai bot 发送一个请求，默认超时 10s，如果需要调整超时，使用 [`Self::request_timeout`]。
     pub async fn request<Request>(&self, request: Request) -> Result<Request::Response>
     where
-        Request: crate::API + 'static,
+        Request: crate::Api + 'static,
     {
         self.request_timeout(request, Duration::from_secs(10)).await
     }
@@ -88,7 +88,7 @@ impl Bot {
         timeout: Duration,
     ) -> Result<Request::Response>
     where
-        Request: crate::API + 'static,
+        Request: crate::Api + 'static,
     {
         let (tx, rx) = oneshot::channel::<Value>();
         let boxed_request: Box<dyn ApiRequest> = Box::new(request);

@@ -16,9 +16,7 @@ where
             if s.is_empty() {
                 return Ok(None);
             }
-            s.parse::<i64>()
-                .map(|i| Some(i))
-                .map_err(serde::de::Error::custom)
+            s.parse::<i64>().map(Some).map_err(serde::de::Error::custom)
         }
         StringOrInt::Number(i) => Ok(Some(i)),
     }

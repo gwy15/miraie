@@ -130,7 +130,7 @@ impl fmt::Display for MessageBlock {
         match self {
             MessageBlock::Source { .. } => Ok(()),
             MessageBlock::Quote { origin, .. } => {
-                write!(f, "> {}\n", origin)
+                writeln!(f, "> {}", origin)
             }
             MessageBlock::At {
                 target, display, ..
@@ -156,7 +156,7 @@ impl fmt::Display for MessageBlock {
 /// 一条发送的消息，其可能由几个 [`MessageBlock`] 构成。
 ///
 /// 注意第一个 Block 一定是 Source
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub struct MessageChain(pub Vec<MessageBlock>);
 
 impl fmt::Display for MessageChain {
@@ -179,7 +179,7 @@ impl fmt::Display for MessageChain {
 
 impl MessageChain {
     pub fn new() -> Self {
-        Self(Vec::new())
+        Self::default()
     }
     pub fn at(mut self, qq: QQ) -> Self {
         self.0.push(MessageBlock::At {
