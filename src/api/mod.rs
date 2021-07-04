@@ -12,7 +12,9 @@ use serde::Serialize;
 
 use crate::Result;
 
+/// 所有发往 mirai 的请求都实现这个 trait
 pub trait API: ApiRequest {
+    /// 请求返回的类型
     type Response: serde::de::DeserializeOwned;
 
     fn process_response(value: serde_json::Value) -> Result<Self::Response>;

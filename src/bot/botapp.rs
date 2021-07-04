@@ -35,9 +35,19 @@ impl Bot {
     ///
     /// # Example
     /// ```no_run
-    /// let (bot, conn) = Bot::new(addr, verify_key, qq).await?;
+    /// # use miraie::prelude::*;
+    /// # tokio_test::block_on(async {
+    /// let (bot, conn) = Bot::new(
+    ///     "127.0.0.1:8080".parse().unwrap(),
+    ///     "verify_key",
+    ///     QQ(12345)
+    /// ).await?;
+    /// 
+    /// async fn handler(msg: Message) {}
+    /// 
     /// bot.handler(handler);
     /// conn.run().await?;
+    /// # Result::<(), miraie::Error>::Ok(()) });
     /// ```
     pub async fn new(
         addr: SocketAddr,
@@ -98,8 +108,8 @@ impl Bot {
         Ok(response)
     }
 
-    /// 获取一个 [`MessageStream`]，其实现了 `Stream<Item = Message>`
-    pub fn messages(&self) -> MessageStream {
+    /// 获取一个全部消息的 stream
+    pub fn messages(&self) -> impl Stream<Item = Message> {
         MessageStream::new(self.message_channel.subscribe())
     }
 
