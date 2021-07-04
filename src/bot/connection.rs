@@ -7,7 +7,7 @@ use crate::{
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::BTreeMap, convert::TryFrom, sync::atomic::AtomicI64};
+use std::{collections::BTreeMap, convert::TryFrom, sync::atomic::AtomicI64, time::Instant};
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 static SYNC_ID: AtomicI64 = AtomicI64::new(10);
@@ -29,7 +29,7 @@ pub struct Connection {
     /// 接收 request 的通道
     request_receive: mpsc::Receiver<(Box<dyn ApiRequest>, RequestResponseChannel)>,
     /// 保存返回 request 结果的 channel
-    request_callback_channel: BTreeMap<i64, RequestResponseChannel>,
+    request_callback_channel: BTreeMap<i64, (Instant, &'static str, RequestResponseChannel)>,
 
     /// 向 mirai 发送消息
     write: SplitSink<WebsocketStream, WsMessage>,
@@ -104,15 +104,22 @@ impl Connection {
             Some(sync_id) if sync_id > 0 => {
                 debug!("received packet with sync_id = {}", sync_id);
                 match self.request_callback_channel.remove(&sync_id) {
-                    Some(ch) => {
+                    Some((t, cmd, ch)) => {
                         if ch.send(packet.data).is_err() {
                             warn!("receiver is already closed.");
                         }
+                        info!(
+                            "invoke {} sync_id={} finished, took {} ms.",
+                            cmd,
+                            sync_id,
+                            t.elapsed().as_millis()
+                        );
                     }
                     None => {
                         warn!("channel not found.");
                     }
                 };
+
                 return Ok(());
             }
             // 否则尝试按照消息解析
@@ -138,6 +145,10 @@ impl Connection {
         let (payload, ch) = request;
         // 生成 sync_id
         let sync_id = SYNC_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let cmd = payload.command();
+        let t = Instant::now();
+
+        info!("start request {}, sync_id = {}", cmd, sync_id);
         let payload_s = payload.encode(sync_id);
         debug!(
             "sending request, sync_id = {}, payload = {}",
@@ -145,8 +156,14 @@ impl Connection {
         );
         // 把 request 发给 mirai
         self.write.send(WsMessage::Text(payload_s)).await?;
+        info!(
+            "request {} sync_id = {} sent, took {} ms.",
+            cmd,
+            sync_id,
+            t.elapsed().as_millis()
+        );
         // 保存返回结果的 channel
-        self.request_callback_channel.insert(sync_id, ch);
+        self.request_callback_channel.insert(sync_id, (t, cmd, ch));
 
         Ok(())
     }
