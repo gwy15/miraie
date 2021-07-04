@@ -119,8 +119,6 @@ impl Connection {
                         warn!("channel not found.");
                     }
                 };
-
-                return Ok(());
             }
             // 否则尝试按照消息解析
             _ => {
@@ -133,9 +131,9 @@ impl Connection {
                 if self.message_channel.send(message).is_err() {
                     warn!("no active receiver to receive message.");
                 }
-                Ok(())
             }
         }
+        Ok(())
     }
 
     async fn on_request(
