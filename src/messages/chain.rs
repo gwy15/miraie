@@ -1,6 +1,9 @@
 use crate::bot::QQ;
 use chrono::{DateTime, Utc};
-use std::fmt::{self, Write};
+use std::{
+    env,
+    fmt::{self, Write},
+};
 
 /// 消息的一个分块，见
 /// <https://github.com/project-mirai/mirai-api-http/blob/master/docs/api/MessageType.md>
@@ -68,8 +71,8 @@ pub enum MessageBlock {
         image_id: String,
         /// 图片的URL，发送时可作网络图片的链接；接收时为腾讯图片服务器的链接，可用于图片下载
         url: String,
-        /// 图片的路径，发送本地图片，相对路径于 plugins/MiraiAPIHTTP/images
-        path: Option<String>,
+        // /// 图片的路径，发送本地图片，相对路径于 plugins/MiraiAPIHTTP/images
+        // path: Option<String>,
         /// 图片的 Base64 编码
         base64: Option<String>,
     },
@@ -85,8 +88,8 @@ pub enum MessageBlock {
         image_id: String,
         /// 图片的URL，发送时可作网络图片的链接；接收时为腾讯图片服务器的链接，可用于图片下载
         url: String,
-        /// 图片的路径，发送本地图片，相对路径于 plugins/MiraiAPIHTTP/images
-        path: Option<String>,
+        // /// 图片的路径，发送本地图片，相对路径于 plugins/MiraiAPIHTTP/images
+        // path: Option<String>,
         /// 图片的 Base64 编码
         base64: Option<String>,
     },
@@ -97,13 +100,13 @@ pub enum MessageBlock {
     Voice {
         /// 语音的voiceId，不为空时将忽略url属性
         #[serde(rename = "voiceId")]
-        voice_id: String,
+        voice_id: Option<String>,
         /// 语音的URL，发送时可作网络语音的链接；接收时为腾讯语音服务器的链接，可用于语音下载
-        url: String,
-        /// 语音的路径，发送本地语音，相对路径于plugins/MiraiAPIHTTP/voices
-        path: Option<String>,
+        url: Option<String>,
+        // /// 语音的路径，发送本地语音，相对路径于 plugins/MiraiAPIHTTP/voices
+        // path: Option<String>,
         /// 语音的 Base64 编码
-        base: Option<String>,
+        base64: Option<String>,
     },
 
     /// XML
@@ -195,6 +198,40 @@ impl MessageChain {
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.0.push(MessageBlock::Text { text: text.into() });
         self
+    }
+
+    pub fn image_url(mut self, url: impl Into<String>) -> Self {
+        self.0.push(MessageBlock::Image {
+            image_id: String::new(),
+            url: url.into(),
+            base64: None,
+        });
+        self
+    }
+    /// 图片的路径，发送本地图片，相对路径于 env:RESOURCE_ROOT/images
+    pub fn image_path(self, path: impl AsRef<str>) -> Self {
+        self.image_url(format!(
+            "file:///{}/images/{}",
+            env::var("RESOURCE_ROOT").unwrap(),
+            path.as_ref()
+        ))
+    }
+
+    pub fn voice_url(mut self, url: impl Into<String>) -> Self {
+        self.0.push(MessageBlock::Voice {
+            voice_id: None,
+            url: Some(url.into()),
+            base64: None,
+        });
+        self
+    }
+    /// 语音的路径，发送本地语音，相对路径于 env:RESOURCE_ROOT/voices
+    pub fn voice_path(self, path: impl AsRef<str>) -> Self {
+        self.voice_url(format!(
+            "file:///{}/voices/{}",
+            env::var("RESOURCE_ROOT").unwrap(),
+            path.as_ref()
+        ))
     }
 
     /// 获取消息的 message id

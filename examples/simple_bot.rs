@@ -7,16 +7,37 @@ use miraie::{
     App, Bot,
 };
 use std::time::Duration;
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 
 async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     if group_msg.message.to_string() == "ping" {
-        bot.request(api::send_group_message::Request {
-            target: group_msg.sender.group.id,
-            message: MessageChain::new().text("pong"),
-            quote: group_msg.message.message_id(),
+        let resp = bot
+            .request(api::send_group_message::Request {
+                target: group_msg.sender.group.id,
+                message: MessageChain::new().text("pong"),
+                quote: group_msg.message.message_id(),
+            })
+            .await?;
+        sleep(Duration::from_secs(5)).await;
+        bot.request(api::recall::Request {
+            message_id: resp.message_id,
         })
         .await?;
+        return Ok(());
+    }
+    if group_msg.message.to_string() == "谁要喜欢你啊" {
+        group_msg
+            .reply(MessageChain::new().voice_path(r"谁要喜欢你啊.silk"), &bot)
+            .await?;
+        info!("请求语音发送成功");
+        return Ok(());
+    }
+    if group_msg.message.to_string() == "起床" {
+        group_msg
+            .reply(MessageChain::new().voice_path(r"起床.silk"), &bot)
+            .await?;
+        info!("请求语音发送成功");
+        return Ok(());
     }
     Ok(())
 }
@@ -79,6 +100,7 @@ async fn on_event(event: Event) {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv::dotenv()?;
     pretty_env_logger::init_timed();
     let (bot, con) = miraie::Bot::new(
         "127.0.0.1:18418".parse().unwrap(),
