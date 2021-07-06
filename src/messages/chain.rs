@@ -208,11 +208,11 @@ impl MessageChain {
         });
         self
     }
-    /// 图片的路径，发送本地图片，相对路径于 env:RESOURCE_ROOT/images
+    /// 图片的路径，发送本地图片，相对路径于 env:MIRAIE_RESOURCE_ROOT/images
     pub fn image_path(self, path: impl AsRef<str>) -> Self {
         self.image_url(format!(
             "file:///{}/images/{}",
-            env::var("RESOURCE_ROOT").unwrap(),
+            env::var("MIRAIE_RESOURCE_ROOT").unwrap(),
             path.as_ref()
         ))
     }
@@ -225,11 +225,11 @@ impl MessageChain {
         });
         self
     }
-    /// 语音的路径，发送本地语音，相对路径于 env:RESOURCE_ROOT/voices
+    /// 语音的路径，发送本地语音，相对路径于 env:MIRAIE_RESOURCE_ROOT/voices
     pub fn voice_path(self, path: impl AsRef<str>) -> Self {
         self.voice_url(format!(
             "file:///{}/voices/{}",
-            env::var("RESOURCE_ROOT").unwrap(),
+            env::var("MIRAIE_RESOURCE_ROOT").unwrap(),
             path.as_ref()
         ))
     }
