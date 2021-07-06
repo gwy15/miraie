@@ -156,9 +156,66 @@ impl fmt::Display for MessageBlock {
     }
 }
 
+impl MessageBlock {
+    pub fn at(qq: QQ) -> Self {
+        Self::At {
+            target: qq,
+            display: String::new(),
+        }
+    }
+    pub fn at_all() -> Self {
+        Self::AtAll
+    }
+    pub fn text(text: impl Into<String>) -> Self {
+        Self::Text { text: text.into() }
+    }
+
+    pub fn image_url(url: impl Into<String>) -> Self {
+        Self::Image {
+            image_id: String::new(),
+            url: url.into(),
+            base64: None,
+        }
+    }
+    /// 图片的路径，发送本地图片，相对路径于 env:MIRAIE_RESOURCE_ROOT/images
+    pub fn image_path(path: impl AsRef<str>) -> Self {
+        Self::image_url(format!(
+            "file:///{}/images/{}",
+            env::var("MIRAIE_RESOURCE_ROOT").unwrap(),
+            path.as_ref()
+        ))
+    }
+
+    pub fn voice_url(url: impl Into<String>) -> Self {
+        Self::Voice {
+            voice_id: None,
+            url: Some(url.into()),
+            base64: None,
+        }
+    }
+    /// 语音的路径，发送本地语音，相对路径于 env:MIRAIE_RESOURCE_ROOT/voices
+    pub fn voice_path(path: impl AsRef<str>) -> Self {
+        Self::voice_url(format!(
+            "file:///{}/voices/{}",
+            env::var("MIRAIE_RESOURCE_ROOT").unwrap(),
+            path.as_ref()
+        ))
+    }
+}
+
 /// 一条发送的消息，其可能由几个 [`MessageBlock`] 构成。
 ///
 /// 注意第一个 Block 一定是 Source
+///
+/// # Example
+/// ```
+/// # std::env::set_var("MIRAIE_RESOURCE_ROOT", "");
+/// use miraie::prelude::*;
+/// let chain = MessageChain::new()
+///     .text("text")
+///     .image_path("a.jpg")
+///     .at(QQ(12345));
+/// ```
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Default)]
 pub struct MessageChain(pub Vec<MessageBlock>);
 
@@ -201,37 +258,23 @@ impl MessageChain {
     }
 
     pub fn image_url(mut self, url: impl Into<String>) -> Self {
-        self.0.push(MessageBlock::Image {
-            image_id: String::new(),
-            url: url.into(),
-            base64: None,
-        });
+        self.0.push(MessageBlock::image_url(url));
         self
     }
     /// 图片的路径，发送本地图片，相对路径于 env:MIRAIE_RESOURCE_ROOT/images
-    pub fn image_path(self, path: impl AsRef<str>) -> Self {
-        self.image_url(format!(
-            "file:///{}/images/{}",
-            env::var("MIRAIE_RESOURCE_ROOT").unwrap(),
-            path.as_ref()
-        ))
+    pub fn image_path(mut self, path: impl AsRef<str>) -> Self {
+        self.0.push(MessageBlock::image_path(path));
+        self
     }
 
     pub fn voice_url(mut self, url: impl Into<String>) -> Self {
-        self.0.push(MessageBlock::Voice {
-            voice_id: None,
-            url: Some(url.into()),
-            base64: None,
-        });
+        self.0.push(MessageBlock::voice_url(url));
         self
     }
     /// 语音的路径，发送本地语音，相对路径于 env:MIRAIE_RESOURCE_ROOT/voices
-    pub fn voice_path(self, path: impl AsRef<str>) -> Self {
-        self.voice_url(format!(
-            "file:///{}/voices/{}",
-            env::var("MIRAIE_RESOURCE_ROOT").unwrap(),
-            path.as_ref()
-        ))
+    pub fn voice_path(mut self, path: impl AsRef<str>) -> Self {
+        self.0.push(MessageBlock::voice_path(path));
+        self
     }
 
     /// 获取消息的 message id
