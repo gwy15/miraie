@@ -2,7 +2,7 @@
 use futures::{future::ready, Stream, StreamExt};
 
 use super::MessageChain;
-use crate::{bot::QQ, Bot};
+use crate::{api, bot::QQ, Bot, Result};
 
 /// 好友私聊信息
 #[derive(Debug, Clone, Deserialize)]
@@ -18,6 +18,20 @@ impl FriendMessage {
         let sender_id = self.sender.id;
         bot.friend_messages()
             .filter(move |msg| ready(msg.sender.id == sender_id))
+    }
+
+    /// 回复这条消息
+    pub async fn reply(
+        &self,
+        message: MessageChain,
+        bot: &Bot,
+    ) -> Result<api::send_friend_message::Response> {
+        bot.request(api::send_friend_message::Request {
+            target: self.sender.id,
+            quote: None,
+            message,
+        })
+        .await
     }
 }
 
