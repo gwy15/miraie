@@ -63,7 +63,7 @@ impl FriendMessage {
         let msg = tokio::time::timeout(timeout, msg)
             .await
             .map_err(|_| Error::ResponseTimeout)?;
-        msg.ok_or_else(|| Error::ConnectionClosed)
+        msg.ok_or(Error::ConnectionClosed)
     }
 }
 
