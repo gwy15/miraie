@@ -2,17 +2,15 @@ use crate::{
     api::ApiRequest,
     bot::{SplitSink, SplitStream, WebsocketStream, WsMessage},
     messages::Message,
-    Result,
+    Error, Result,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::BTreeMap, convert::TryFrom, sync::atomic::AtomicI64, time::Instant};
-use tokio::sync::{broadcast, mpsc, oneshot};
+use std::sync::atomic::AtomicI64;
+use tokio::sync::{broadcast, mpsc};
 
-static SYNC_ID: AtomicI64 = AtomicI64::new(10);
-
-type RequestResponseChannel = oneshot::Sender<Value>;
+pub static SYNC_ID: AtomicI64 = AtomicI64::new(10);
 
 /// Connection 负责使用 ws 协议跟 mirai 沟通。
 ///
@@ -27,14 +25,17 @@ pub struct Connection {
     message_channel: broadcast::Sender<Message>,
 
     /// 接收 request 的通道
-    request_receive: mpsc::Receiver<(Box<dyn ApiRequest>, RequestResponseChannel)>,
-    /// 保存返回 request 结果的 channel
-    request_callback_channel: BTreeMap<i64, (Instant, &'static str, RequestResponseChannel)>,
+    request_receive: mpsc::Receiver<(i64, Box<dyn ApiRequest>)>,
+    /// 返回 request 结果的 channel
+    response_channel: broadcast::Sender<(i64, Value)>,
 
     /// 向 mirai 发送消息
     write: SplitSink<WebsocketStream, WsMessage>,
     /// 从 mirai 接收消息
     read: SplitStream<WebsocketStream>,
+
+    /// 用来消除掉接收到的第一个 packet 的 warning
+    inited: bool,
 }
 
 /// 从 mirai 接收到的 ws 包
@@ -51,16 +52,21 @@ struct MiraiPacket {
 impl Connection {
     pub(crate) fn new(
         ws: WebsocketStream,
-        request_receive: mpsc::Receiver<(Box<dyn ApiRequest>, RequestResponseChannel)>,
+        request_receive: mpsc::Receiver<(i64, Box<dyn ApiRequest>)>,
         message_channel: broadcast::Sender<Message>,
+        response_channel: broadcast::Sender<(i64, Value)>,
     ) -> Self {
         let (write, read) = ws.split();
         Self {
+            message_channel,
+
             request_receive,
+            response_channel,
+
             write,
             read,
-            request_callback_channel: BTreeMap::default(),
-            message_channel,
+
+            inited: false,
         }
     }
 
@@ -96,57 +102,52 @@ impl Connection {
     async fn on_ws_msg(&mut self, msg: WsMessage) -> Result<()> {
         let packet: MiraiPacket = match msg {
             WsMessage::Text(json) => serde_json::from_str(&json)?,
+            WsMessage::Close(Some(close_frame)) => {
+                error!("mirai 主动关闭了连接：{}", close_frame.reason);
+                return Err(Error::ConnectionClosed);
+            }
             _ => return Ok(()),
         };
-        trace!("received ws packet: {:?}", packet);
+        // debug!("received ws packet: {:?}", packet);
         match packet.sync_id {
             // 如果是 request 的 response
             Some(sync_id) if sync_id > 0 => {
                 debug!("received packet with sync_id = {}", sync_id);
-                match self.request_callback_channel.remove(&sync_id) {
-                    Some((t, cmd, ch)) => {
-                        if ch.send(packet.data).is_err() {
-                            warn!("receiver is already closed.");
-                        }
-                        info!(
-                            "invoke {} sync_id={} finished, took {} ms.",
-                            cmd,
-                            sync_id,
-                            t.elapsed().as_millis()
-                        );
-                    }
-                    None => {
-                        warn!("channel not found.");
-                    }
-                };
+                if let Err(e) = self.response_channel.send((sync_id, packet.data)) {
+                    // 这里可能失败，可能超时，接收方已经关闭了，甚至根本没有发送这个请求
+                    warn!("send request response failed: {:?}", e);
+                }
             }
             // 否则尝试按照消息解析
             _ => {
                 let data = packet.data;
-                let message = Message::try_from(data).map_err(|e| {
-                    warn!("Failed to parse as message: {:?}", e);
-                    e
-                })?;
-                debug!("message = {:?}", message);
+                let message: Message = match serde_json::from_value(data) {
+                    Ok(msg) => msg,
+                    Err(e) => {
+                        return if self.inited {
+                            Err(e.into())
+                        } else {
+                            self.inited = true;
+                            Ok(())
+                        };
+                    }
+                };
+                trace!("message = {:?}", message);
                 if self.message_channel.send(message).is_err() {
                     warn!("no active receiver to receive message.");
                 }
             }
         }
+        self.inited = true;
         Ok(())
     }
 
-    async fn on_request(
-        &mut self,
-        request: (Box<dyn ApiRequest>, RequestResponseChannel),
-    ) -> Result<()> {
-        let (payload, ch) = request;
-        // 生成 sync_id
-        let sync_id = SYNC_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let cmd = payload.command();
-        let t = Instant::now();
+    async fn on_request(&mut self, request: (i64, Box<dyn ApiRequest>)) -> Result<()> {
+        let (sync_id, payload) = request;
 
-        info!("start request {}, sync_id = {}", cmd, sync_id);
+        let cmd = payload.command();
+
+        info!("发送 API 请求 `{}`, sync_id = {}", cmd, sync_id);
         let payload_s = payload.encode(sync_id);
         debug!(
             "sending request, sync_id = {}, payload = {}",
@@ -154,14 +155,6 @@ impl Connection {
         );
         // 把 request 发给 mirai
         self.write.send(WsMessage::Text(payload_s)).await?;
-        info!(
-            "request {} sync_id = {} sent, took {} ms.",
-            cmd,
-            sync_id,
-            t.elapsed().as_millis()
-        );
-        // 保存返回结果的 channel
-        self.request_callback_channel.insert(sync_id, (t, cmd, ch));
 
         Ok(())
     }

@@ -87,7 +87,7 @@ macro_rules! api {
         impl $crate::api::Api for $req {
             type Response = $rsp;
             fn process_response(value: serde_json::Value) -> $crate::Result<Self::Response> {
-                debug!("process value {:?} as response", value);
+                trace!("process value {:?} as response", value);
                 let resp: ApiResponseData::<$rsp> = serde_json::from_value(value)?;
                 if resp.code != 0 {
                     return Err($crate::Error::Request {

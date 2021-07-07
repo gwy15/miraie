@@ -6,8 +6,11 @@ use crate::{
 };
 use futures::{Stream, StreamExt};
 use serde_json::Value;
-use std::{net::SocketAddr, time::Duration};
-use tokio::sync::{broadcast, mpsc, oneshot};
+use std::{
+    net::SocketAddr,
+    time::{Duration, Instant},
+};
+use tokio::sync::{broadcast, mpsc};
 
 /// [`Bot`] 用来保存一个 bot 中的状态，如消息队列、跟连接的沟通、数据库连接等。
 #[derive(Clone)]
@@ -15,7 +18,9 @@ pub struct Bot {
     /// 在 handler 内广播消息，如群消息等
     message_channel: broadcast::Sender<Message>,
     /// 处理主动消息，如发送消息等
-    request_channel: mpsc::Sender<(Box<dyn ApiRequest>, oneshot::Sender<Value>)>,
+    request_channel: mpsc::Sender<(i64, Box<dyn ApiRequest>)>,
+    ///
+    response_channel: broadcast::Sender<(i64, Value)>,
 }
 
 impl crate::msg_framework::App for Bot {
@@ -60,14 +65,17 @@ impl Bot {
         let url = format!("ws://{}/all?verifyKey={}&qq={}", addr, verify_key, qq);
         debug!("connecting url: {}", url);
 
-        let (request_tx, request_rx) = mpsc::channel(4096);
         let (ws_stream, _) = async_tungstenite::tokio::connect_async(url).await?;
+        let (request_tx, request_rx) = mpsc::channel(4096);
+        let (response_tx, _) = broadcast::channel(4096);
         debug!("bot {} connected.", qq);
-        let connection = super::Connection::new(ws_stream, request_rx, tx.clone());
+        let connection =
+            super::Connection::new(ws_stream, request_rx, tx.clone(), response_tx.clone());
 
         let bot = Bot {
             message_channel: tx,
             request_channel: request_tx,
+            response_channel: response_tx,
         };
 
         Ok((bot, connection))
@@ -90,14 +98,37 @@ impl Bot {
     where
         Request: crate::Api + 'static,
     {
-        let (tx, rx) = oneshot::channel::<Value>();
+        let sync_id = super::connection::SYNC_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let cmd = request.command();
         let boxed_request: Box<dyn ApiRequest> = Box::new(request);
-        let msg = (boxed_request, tx);
-        if self.request_channel.send(msg).await.is_err() {
+        let t = Instant::now();
+        if self
+            .request_channel
+            .send((sync_id, boxed_request))
+            .await
+            .is_err()
+        {
             return Err(Error::ConnectionClosed);
         }
+
+        let mut response_rx = self.response_channel.subscribe();
+        let wait_task = async move {
+            loop {
+                match response_rx.recv().await {
+                    Ok((r_sync_id, resp)) => {
+                        if r_sync_id == sync_id {
+                            break Result::Ok(resp);
+                        }
+                    }
+                    Err(e) => {
+                        warn!("recv error: {:?}", e);
+                        return Err(Error::ConnectionClosed);
+                    }
+                }
+            }
+        };
         // timeout
-        let rx = tokio::time::timeout(timeout, rx);
+        let rx = tokio::time::timeout(timeout, wait_task);
         let value = match rx.await {
             Ok(Ok(v)) => Ok(v),
             Ok(Err(_)) => Err(Error::ConnectionClosed),
@@ -105,6 +136,11 @@ impl Bot {
         }?;
         // 这里拿到的是 { code, msg, data? }
         let response = Request::process_response(value)?;
+        info!(
+            "API 请求 `{}` 成功，耗时 {} ms",
+            cmd,
+            t.elapsed().as_millis()
+        );
         Ok(response)
     }
 
