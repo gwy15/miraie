@@ -132,7 +132,7 @@ impl Connection {
                         };
                     }
                 };
-                trace!("message = {:?}", message);
+                debug!("message = {:?}", message);
                 if self.message_channel.send(message).is_err() {
                     warn!("no active receiver to receive message.");
                 }

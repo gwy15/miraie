@@ -1,10 +1,10 @@
 //! mirai 传回的消息，群聊、私聊、事件等
-mod chain;
-mod event;
+pub mod chain;
+pub mod event;
 pub mod friend;
 pub mod group;
-mod stranger;
-mod temp;
+pub mod stranger;
+pub mod temp;
 
 use std::convert::TryFrom;
 

@@ -1,9 +1,10 @@
 //! 跟群聊、群成员有关的模块
 use chrono::{DateTime, Utc};
 use futures::{future::ready, Stream, StreamExt};
+use std::time::{Duration, Instant};
 
 use super::MessageChain;
-use crate::{api, bot::QQ, Bot, Result};
+use crate::{api, bot::QQ, Bot, Error, Result};
 
 /// 群聊信息
 #[derive(Debug, Clone, Deserialize)]
@@ -28,12 +29,32 @@ impl GroupMessage {
     pub fn followed_sender_messages(&self, bot: &Bot) -> impl Stream<Item = GroupMessage> {
         let group_id = self.sender.group.id;
         let sender_id = self.sender.id;
-        bot.group_messages()
-            .filter(move |msg| ready(msg.sender.group.id == group_id && msg.sender.id == sender_id))
+        bot.group_messages().filter(move |msg| {
+            ready({
+                // FIXME
+                let m = msg.sender.group.id == group_id && msg.sender.id == sender_id;
+                info!("msg = {:?}, matches: {}", msg, m);
+                m
+            })
+        })
     }
 
-    /// 在群里回复这条消息，不产生“引用”。
+    /// 在群里回复这条消息，产生“引用”。
     pub async fn reply(
+        &self,
+        message: impl Into<MessageChain>,
+        bot: &Bot,
+    ) -> Result<api::send_group_message::Response> {
+        bot.request(api::send_group_message::Request {
+            target: self.sender.group.id,
+            quote: self.message.message_id(),
+            message: message.into(),
+        })
+        .await
+    }
+
+    /// 不引用，直接在群里回复这条消息
+    pub async fn unquote_reply(
         &self,
         message: impl Into<MessageChain>,
         bot: &Bot,
@@ -46,18 +67,37 @@ impl GroupMessage {
         .await
     }
 
-    /// 引用回复这条啊消息
-    pub async fn quote_reply(
+    /// 返回一条消息并等待回复，默认超时 10s
+    /// # Example
+    /// ```plaintext
+    /// let msg: GroupMessage;
+    /// let confirm = msg.promp("你确定吗？").await?;
+    /// if confirm.message.as_confirm().unwrap_or_default() {
+    ///     // do something...
+    /// }
+    /// ```
+    pub async fn prompt(&self, message: impl Into<MessageChain>, bot: &Bot) -> Result<Self> {
+        self.prompt_timeout(message, bot, Duration::from_secs(10))
+            .await
+    }
+
+    /// 返回一条消息并等待回复
+    pub async fn prompt_timeout(
         &self,
         message: impl Into<MessageChain>,
         bot: &Bot,
-    ) -> Result<api::send_group_message::Response> {
-        bot.request(api::send_group_message::Request {
-            target: self.sender.group.id,
-            quote: self.message.message_id(),
-            message: message.into(),
-        })
-        .await
+        timeout: Duration,
+    ) -> Result<Self> {
+        let t = Instant::now();
+        self.reply(message, bot).await?;
+        debug!("prompt sent.");
+        let mut followed = self.followed_sender_messages(bot);
+        let msg = followed.next();
+        let msg = tokio::time::timeout(timeout, msg)
+            .await
+            .map_err(|_| Error::ResponseTimeout)?;
+        info!("prompt 获得了返回，耗时 {} ms", t.elapsed().as_millis());
+        msg.ok_or(Error::ConnectionClosed)
     }
 }
 

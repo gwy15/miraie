@@ -21,7 +21,7 @@ pub mod prelude {
     pub use super::{
         api,
         bot::QQ,
-        messages::{self, FriendMessage, GroupMessage, Message, MessageBlock, MessageChain},
+        messages::{FriendMessage, GroupMessage, Message, MessageBlock, MessageChain},
         Api, App, Bot,
     };
 }

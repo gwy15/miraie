@@ -7,6 +7,8 @@ use std::{
 
 /// 消息的一个分块，见
 /// <https://github.com/project-mirai/mirai-api-http/blob/master/docs/api/MessageType.md>
+///
+/// [`MessageBlock`] 实现了 `From<String>` 和 `From<&str>`，可以直接快速建立文本回复。
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum MessageBlock {
@@ -203,9 +205,9 @@ impl MessageBlock {
     }
 }
 
-/// 一条发送的消息，其可能由几个 [`MessageBlock`] 构成。
+/// 一条接受或者发送的消息，可能由一个或几个 [`MessageBlock`] 构成。
 ///
-/// 注意第一个 Block 一定是 Source
+/// 如果是接受到的消息，第一个 Block 一定是 Source。
 ///
 /// # Example
 /// ```
@@ -238,9 +240,12 @@ impl fmt::Display for MessageChain {
 }
 
 impl MessageChain {
+    /// 新建一条消息，通常用来回复
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// 在消息里增加一个 at 人
     pub fn at(mut self, qq: QQ) -> Self {
         self.0.push(MessageBlock::At {
             target: qq,
@@ -248,36 +253,48 @@ impl MessageChain {
         });
         self
     }
+
+    /// 在消息里增加一个 at 所有人
     pub fn at_all(mut self) -> Self {
         self.0.push(MessageBlock::AtAll);
         self
     }
+
+    /// 在消息里增加一些文字
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.0.push(MessageBlock::Text { text: text.into() });
         self
     }
 
+    /// 在消息里增加一张图片，其来自 url
     pub fn image_url(mut self, url: impl Into<String>) -> Self {
         self.0.push(MessageBlock::image_url(url));
         self
     }
-    /// 图片的路径，发送本地图片，相对路径于 env:MIRAIE_RESOURCE_ROOT/images
+
+    /// 在消息里增加一张图片，发送本地图片，相对路径于 env:MIRAIE_RESOURCE_ROOT/images。
+    ///
+    /// 注意这里的路径是相对于 mirai 运行环境的路径，并不一定是机器人所在机器的路径。
     pub fn image_path(mut self, path: impl AsRef<str>) -> Self {
         self.0.push(MessageBlock::image_path(path));
         self
     }
 
+    /// 在消息里增加一段语音
     pub fn voice_url(mut self, url: impl Into<String>) -> Self {
         self.0.push(MessageBlock::voice_url(url));
         self
     }
-    /// 语音的路径，发送本地语音，相对路径于 env:MIRAIE_RESOURCE_ROOT/voices
+
+    /// 在消息里增加一段语音，发送本地语音，相对路径于 env:MIRAIE_RESOURCE_ROOT/voices
+    ///
+    /// 注意这里的路径是相对于 mirai 运行环境的路径，并不一定是机器人所在机器的路径。
     pub fn voice_path(mut self, path: impl AsRef<str>) -> Self {
         self.0.push(MessageBlock::voice_path(path));
         self
     }
 
-    /// 获取消息的 message id
+    /// 获取消息的 message id，可以用于稍后回复
     pub fn message_id(&self) -> Option<i64> {
         if self.0.is_empty() {
             return None;
@@ -288,7 +305,8 @@ impl MessageChain {
         }
     }
 
-    /// 尝试把 message 按照确认取消匹配
+    /// 尝试把 message 按照 确认/取消 消息进行匹配。只会匹配常用的一些结构，
+    /// 如“好”，“确认”等，并不保证准确。如果需要更准确的结果建议自行实现。
     pub fn as_confirm(&self) -> Option<bool> {
         match self.to_string().to_lowercase().trim() {
             "好" | "好的" | "是" | "确认" | "真的" | "ok" | "yes" | "y" | "√" | "1" => {

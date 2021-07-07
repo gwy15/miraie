@@ -1,4 +1,4 @@
-use super::{connection::Connection, streams::MessageStream, QQ};
+use super::{connection::Connection, QQ};
 use crate::{
     api::ApiRequest,
     messages::{Event, FriendMessage, GroupMessage, Message},
@@ -147,7 +147,14 @@ impl Bot {
 
     /// 获取一个全部消息的 stream
     pub fn messages(&self) -> impl Stream<Item = Message> + Unpin {
-        MessageStream::new(self.message_channel.subscribe())
+        let mut ch = self.message_channel.subscribe();
+
+        let s = async_stream::stream! {
+            while let Ok(msg) = ch.recv().await {
+                yield msg;
+            }
+        };
+        Box::pin(s)
     }
 
     /// 获取一个全部群聊消息的 stream

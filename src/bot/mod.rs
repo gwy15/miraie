@@ -2,7 +2,6 @@
 mod basic_types;
 mod botapp;
 mod connection;
-mod streams;
 mod utils;
 
 pub use basic_types::*;

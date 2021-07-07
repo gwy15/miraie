@@ -36,7 +36,21 @@ impl FriendMessage {
         .await
     }
 
-    /// 返回一条消息并等待回复，默认超时 10s
+    /// 不引用，直接回复这条消息
+    pub async fn unquote_reply(
+        &self,
+        message: impl Into<MessageChain>,
+        bot: &Bot,
+    ) -> Result<api::send_friend_message::Response> {
+        bot.request(api::send_friend_message::Request {
+            target: self.sender.id,
+            quote: None,
+            message: message.into(),
+        })
+        .await
+    }
+
+    /// 返回一条消息并等待回复，返回回复的消息。默认超时 10s
     /// # Example
     /// ```plaintext,no_run
     /// let msg: FriendMessage;
@@ -50,7 +64,7 @@ impl FriendMessage {
             .await
     }
 
-    /// 返回一条消息并等待回复
+    /// 返回一条消息并等待回复，返回回复的消息。
     pub async fn prompt_timeout(
         &self,
         message: impl Into<MessageChain>,

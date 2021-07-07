@@ -3,21 +3,16 @@ use futures::StreamExt;
 use log::*;
 use miraie::{
     api,
-    messages::{Event, FriendMessage, GroupMessage, MessageChain},
+    messages::{Event, GroupMessage},
     App, Bot,
 };
 use std::time::Duration;
-use tokio::time::{sleep, timeout};
+use tokio::time::sleep;
 
 async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     if group_msg.message.to_string() == "ping" {
-        let resp = bot
-            .request(api::send_group_message::Request {
-                target: group_msg.sender.group.id,
-                message: MessageChain::new().text("pong"),
-                quote: group_msg.message.message_id(),
-            })
-            .await?;
+        let resp = group_msg.reply("pong", &bot).await?;
+        // 五秒后撤回
         sleep(Duration::from_secs(5)).await;
         bot.request(api::recall::Request {
             message_id: resp.message_id,
@@ -25,72 +20,31 @@ async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()>
         .await?;
         return Ok(());
     }
-    if group_msg.message.to_string() == "谁要喜欢你啊" {
-        group_msg
-            .reply(MessageChain::new().voice_path(r"谁要喜欢你啊.silk"), &bot)
-            .await?;
-        info!("请求语音发送成功");
-        return Ok(());
-    }
-    if group_msg.message.to_string() == "起床" {
-        group_msg
-            .reply(MessageChain::new().voice_path(r"起床.silk"), &bot)
-            .await?;
-        info!("请求语音发送成功");
-        return Ok(());
-    }
     Ok(())
 }
 
 async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
-    if group_msg.message.to_string() == "打嗝" {
-        group_msg
-            .reply(MessageChain::new().text("真的要打嗝吗？"), &bot)
+    if group_msg.message.to_string() == "复读一下" {
+        let response = group_msg
+            .prompt("真的要复读吗？请在 10 秒内进行确认", &bot)
             .await?;
 
-        let mut reply = group_msg
-            .followed_sender_messages(&bot)
-            .filter_map(|msg| async move { msg.message.as_confirm() })
-            .boxed();
-        match timeout(Duration::from_secs(5), reply.next()).await {
-            Ok(Some(confirm)) => {
-                if confirm {
-                    group_msg
-                        .reply(MessageChain::new().text("嗝~"), &bot)
-                        .await?;
-                } else {
-                    group_msg
-                        .reply(MessageChain::new().text("那就不打了"), &bot)
-                        .await?;
-                }
-            }
-            _ => {
-                group_msg
-                    .reply(MessageChain::new().text("算了不打了"), &bot)
-                    .await?;
-            }
+        if response.message.as_confirm() == Some(true) {
+            group_msg.reply("确认成功，复读下一句", &bot).await?;
+            info!("开始复读，等待下一句");
+            // 等待下一句
+            let next = group_msg
+                .followed_sender_messages(&bot)
+                .next()
+                .await
+                .context("连接断开了哦")?;
+            info!("复读这一句话：{:?}", next);
+            // 进行一个读的复
+            next.unquote_reply(next.message.clone(), &bot).await?;
+        } else {
+            group_msg.reply("确认失败", &bot).await?;
         }
     }
-    Ok(())
-}
-
-async fn on_private_msg(private_msg: FriendMessage, bot: Bot) -> Result<()> {
-    info!("private: {:?}", private_msg);
-
-    let id = bot
-        .request(api::send_friend_message::Request {
-            target: private_msg.sender.id,
-            quote: None,
-            message: MessageChain::new().text("在在在"),
-        })
-        .await?;
-    let message_id = id.message_id;
-    info!("response message id: {:?}", message_id);
-
-    tokio::time::sleep(Duration::from_secs(5)).await;
-    info!("开始撤回");
-
-    bot.request(api::recall::Request { message_id }).await?;
     Ok(())
 }
 
@@ -115,7 +69,6 @@ async fn main() -> Result<()> {
 
     bot.handler(on_group_msg_ping_pong)
         .handler(on_group_msg_confirm)
-        .handler(on_private_msg)
         .handler(on_event);
 
     con.run().await?;
