@@ -318,6 +318,12 @@ impl MessageChain {
     }
 }
 
+impl From<MessageBlock> for MessageChain {
+    fn from(block: MessageBlock) -> Self {
+        Self(vec![block])
+    }
+}
+
 impl From<String> for MessageChain {
     fn from(s: String) -> Self {
         MessageChain::new().text(s)

@@ -5,6 +5,7 @@ pub mod friend;
 pub mod group;
 pub mod stranger;
 pub mod temp;
+mod chain_xml;
 
 use std::convert::TryFrom;
 
