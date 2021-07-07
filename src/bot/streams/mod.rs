@@ -28,3 +28,5 @@ impl Stream for MessageStream {
         }
     }
 }
+
+impl Unpin for MessageStream {}

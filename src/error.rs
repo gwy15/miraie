@@ -18,6 +18,10 @@ pub enum Error {
     #[error("Request to mirai bot has timeout.")]
     RequestTimeout,
 
+    /// 等待用户的回复超时了
+    #[error("Response timeout.")]
+    ResponseTimeout,
+
     #[error("Request error: code = {}, msg = {}", .code, msg)]
     Request { code: i32, msg: String },
 }

@@ -35,13 +35,13 @@ impl GroupMessage {
     /// 在群里回复这条消息，不产生“引用”。
     pub async fn reply(
         &self,
-        message: MessageChain,
+        message: impl Into<MessageChain>,
         bot: &Bot,
     ) -> Result<api::send_group_message::Response> {
         bot.request(api::send_group_message::Request {
             target: self.sender.group.id,
             quote: None,
-            message,
+            message: message.into(),
         })
         .await
     }
@@ -49,13 +49,13 @@ impl GroupMessage {
     /// 引用回复这条啊消息
     pub async fn quote_reply(
         &self,
-        message: MessageChain,
+        message: impl Into<MessageChain>,
         bot: &Bot,
     ) -> Result<api::send_group_message::Response> {
         bot.request(api::send_group_message::Request {
             target: self.sender.group.id,
             quote: self.message.message_id(),
-            message,
+            message: message.into(),
         })
         .await
     }

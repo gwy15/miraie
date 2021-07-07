@@ -7,6 +7,7 @@ use crate::{
 use futures::{Stream, StreamExt};
 use serde_json::Value;
 use std::{
+    future::ready,
     net::SocketAddr,
     time::{Duration, Instant},
 };
@@ -145,37 +146,37 @@ impl Bot {
     }
 
     /// 获取一个全部消息的 stream
-    pub fn messages(&self) -> impl Stream<Item = Message> {
+    pub fn messages(&self) -> impl Stream<Item = Message> + Unpin {
         MessageStream::new(self.message_channel.subscribe())
     }
 
     /// 获取一个全部群聊消息的 stream
-    pub fn group_messages(&self) -> impl Stream<Item = GroupMessage> {
-        self.messages().filter_map(|msg| async move {
-            match msg {
+    pub fn group_messages(&self) -> impl Stream<Item = GroupMessage> + Unpin {
+        self.messages().filter_map(|msg| {
+            ready(match msg {
                 Message::Group(msg) => Some(msg),
                 _ => None,
-            }
+            })
         })
     }
 
     /// 获取一个私聊消息的 stream
-    pub fn friend_messages(&self) -> impl Stream<Item = FriendMessage> {
-        self.messages().filter_map(|msg| async move {
-            match msg {
+    pub fn friend_messages(&self) -> impl Stream<Item = FriendMessage> + Unpin {
+        self.messages().filter_map(|msg| {
+            ready(match msg {
                 Message::Friend(msg) => Some(msg),
                 _ => None,
-            }
+            })
         })
     }
 
     /// 获取一个事件的 stream
-    pub fn events(&self) -> impl Stream<Item = Event> {
-        self.messages().filter_map(|msg| async move {
-            match msg {
+    pub fn events(&self) -> impl Stream<Item = Event> + Unpin {
+        self.messages().filter_map(|msg| {
+            ready(match msg {
                 Message::Event(evt) => Some(evt),
                 _ => None,
-            }
+            })
         })
     }
 }

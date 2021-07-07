@@ -300,6 +300,18 @@ impl MessageChain {
     }
 }
 
+impl From<String> for MessageChain {
+    fn from(s: String) -> Self {
+        MessageChain::new().text(s)
+    }
+}
+
+impl From<&str> for MessageChain {
+    fn from(s: &str) -> Self {
+        MessageChain::new().text(s)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDateTime;
