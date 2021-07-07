@@ -2,7 +2,7 @@ use std::fmt;
 
 /// QQ 号码
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, Hash
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, Hash,
 )]
 pub struct QQ(pub u64);
 
