@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
     dotenv::dotenv()?;
     pretty_env_logger::init_timed();
     let (bot, con) = miraie::Bot::new(
-        "127.0.0.1:18418".parse().unwrap(),
+        "127.0.0.1:18418",
         "dZujVWpnxxXXE5b",
         std::env::var("MIRAIE_BOT_QQ")
             .expect("请设置 MIRAIE_BOT_QQ 环境变量")

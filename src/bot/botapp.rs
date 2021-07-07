@@ -8,7 +8,6 @@ use futures::{Stream, StreamExt};
 use serde_json::Value;
 use std::{
     future::ready,
-    net::SocketAddr,
     time::{Duration, Instant},
 };
 use tokio::sync::{broadcast, mpsc};
@@ -44,7 +43,7 @@ impl Bot {
     /// # use miraie::prelude::*;
     /// # tokio_test::block_on(async {
     /// let (bot, conn) = Bot::new(
-    ///     "127.0.0.1:8080".parse().unwrap(),
+    ///     "127.0.0.1:8080",
     ///     "verify_key",
     ///     QQ(12345)
     /// ).await?;
@@ -56,14 +55,19 @@ impl Bot {
     /// # Result::<(), miraie::Error>::Ok(()) });
     /// ```
     pub async fn new(
-        addr: SocketAddr,
+        addr: impl AsRef<str>,
         verify_key: impl Into<String>,
         qq: QQ,
     ) -> Result<(Self, Connection)> {
         let verify_key = verify_key.into();
         let (tx, _) = broadcast::channel(4096);
 
-        let url = format!("ws://{}/all?verifyKey={}&qq={}", addr, verify_key, qq);
+        let url = format!(
+            "ws://{}/all?verifyKey={}&qq={}",
+            addr.as_ref(),
+            verify_key,
+            qq
+        );
         debug!("connecting url: {}", url);
 
         let (ws_stream, _) = async_tungstenite::tokio::connect_async(url).await?;
