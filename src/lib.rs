@@ -1,3 +1,12 @@
+//! 基于 mirai 和 mirai-api-http 的 QQ 机器人框架
+//!
+//! # features
+//! ## native-tls
+//! 使用 native tls 作为 backend
+//!
+//! ## rustls
+//! 使用 rustls 作为 backend
+
 #[macro_use]
 extern crate log;
 #[macro_use]
