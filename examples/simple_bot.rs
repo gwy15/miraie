@@ -6,9 +6,9 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 /// 实现一个最简单的 ping-pong 服务
-async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()> {
-    if group_msg.message.to_string() == "ping" {
-        let resp = group_msg.reply("pong", &bot).await?;
+async fn ping_pong_handler<T: Conversation>(msg: T, bot: Bot) -> Result<()> {
+    if msg.as_message().to_string() == "ping" {
+        let resp = msg.reply("pong", &bot).await?;
         // 五秒后撤回
         sleep(Duration::from_secs(5)).await;
         bot.request(api::recall::Request {
@@ -22,11 +22,11 @@ async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()>
 
 async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     if group_msg.message.to_string() == "复读一下" {
-        let response = group_msg
+        let next_msg = group_msg
             .prompt("真的要复读吗？请在 10 秒内进行确认", &bot)
             .await?;
 
-        if response.message.as_confirm() == Some(true) {
+        if next_msg.message.as_confirm() == Some(true) {
             group_msg.reply("确认成功，复读下一句", &bot).await?;
             info!("开始复读，等待下一句");
             // 等待下一句
@@ -64,7 +64,9 @@ async fn main() -> Result<()> {
     .await?;
     info!("bot connected.");
 
-    bot.handler(on_group_msg_ping_pong)
+    // ping pong 服务对群聊和私聊都进行注册
+    bot.handler(ping_pong_handler::<GroupMessage>)
+        .handler(ping_pong_handler::<FriendMessage>)
         .handler(on_group_msg_confirm)
         .handler(on_event);
 

@@ -25,7 +25,15 @@ pub struct FriendMessage {
 
 #[async_trait]
 impl Conversation for FriendMessage {
-    type ReplyResponse = api::send_friend_message::Response;
+    type Sender = FriendMember;
+
+    fn sender(&self) -> &Self::Sender {
+        &self.sender
+    }
+
+    fn as_message(&self) -> &MessageChain {
+        &self.message
+    }
 
     fn followed_group_message(&self, bot: &Bot) -> MessageStream<Self> {
         let sender_id = self.sender.id;
@@ -44,7 +52,7 @@ impl Conversation for FriendMessage {
         &self,
         message: impl Into<MessageChain> + Send + 'static,
         bot: &Bot,
-    ) -> Result<Self::ReplyResponse> {
+    ) -> Result<api::common::SendMessageResponse> {
         bot.request(api::send_friend_message::Request {
             target: self.sender.id,
             quote: self.message.message_id(),
@@ -57,7 +65,7 @@ impl Conversation for FriendMessage {
         &self,
         message: impl Into<MessageChain> + Send + 'static,
         bot: &Bot,
-    ) -> Result<Self::ReplyResponse> {
+    ) -> Result<api::common::SendMessageResponse> {
         bot.request(api::send_friend_message::Request {
             target: self.sender.id,
             quote: None,

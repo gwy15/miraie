@@ -1,5 +1,5 @@
 use super::{stream::MessageStream, MessageChain};
-use crate::{Bot, Error, Result};
+use crate::{api, Bot, Error, Result};
 use futures::StreamExt;
 use std::time::{Duration, Instant};
 
@@ -8,8 +8,14 @@ use std::time::{Duration, Instant};
 /// - 对本条消息进行回复
 #[async_trait]
 pub trait Conversation: Sized {
-    // TODO: 群聊和私聊返回的消息类型都是一样的，直接合并成一个
-    type ReplyResponse;
+    /// 发送者的类型
+    type Sender;
+
+    /// 获取发送者信息
+    fn sender(&self) -> &Self::Sender;
+
+    /// 转换为 [`MessageChain`]
+    fn as_message(&self) -> &MessageChain;
 
     /// 获取本聊天的后续消息。
     /// 如果是群聊，则返回当前群聊的任意后续消息；
@@ -27,14 +33,14 @@ pub trait Conversation: Sized {
         &self,
         message: impl Into<MessageChain> + Send + 'static,
         bot: &Bot,
-    ) -> Result<Self::ReplyResponse>;
+    ) -> Result<api::common::SendMessageResponse>;
 
     /// 不引用，直接回复这条消息
     async fn reply_unquote(
         &self,
         message: impl Into<MessageChain> + Send + 'static,
         bot: &Bot,
-    ) -> Result<Self::ReplyResponse>;
+    ) -> Result<api::common::SendMessageResponse>;
 
     /// 返回一条消息并等待回复，默认超时 10s
     /// # Example

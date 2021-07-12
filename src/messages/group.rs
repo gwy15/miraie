@@ -89,7 +89,15 @@ pub struct GroupMessage {
 
 #[async_trait]
 impl super::traits::Conversation for GroupMessage {
-    type ReplyResponse = api::send_group_message::Response;
+    type Sender = GroupMember;
+
+    fn sender(&self) -> &Self::Sender {
+        &self.sender
+    }
+
+    fn as_message(&self) -> &MessageChain {
+        &self.message
+    }
 
     fn followed_group_message(&self, bot: &Bot) -> MessageStream<Self> {
         let group_id = self.sender.group.id;
@@ -111,7 +119,7 @@ impl super::traits::Conversation for GroupMessage {
         &self,
         message: impl Into<MessageChain> + Send + 'static,
         bot: &Bot,
-    ) -> Result<Self::ReplyResponse> {
+    ) -> Result<api::common::SendMessageResponse> {
         bot.request(api::send_group_message::Request {
             target: self.sender.group.id,
             quote: self.message.message_id(),
@@ -124,7 +132,7 @@ impl super::traits::Conversation for GroupMessage {
         &self,
         message: impl Into<MessageChain> + Send + 'static,
         bot: &Bot,
-    ) -> Result<api::send_group_message::Response> {
+    ) -> Result<api::common::SendMessageResponse> {
         bot.request(api::send_group_message::Request {
             target: self.sender.group.id,
             quote: None,
