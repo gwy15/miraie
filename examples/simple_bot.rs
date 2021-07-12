@@ -5,7 +5,7 @@ use miraie::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
 
-/// 实现一个最简单的 ping-pong 服务
+/// 实现一个最简单的 ping-pong 服务，它会对消息 ping 回复 pong，并在五秒后撤回该 pong。
 async fn ping_pong_handler<T: Conversation>(msg: T, bot: Bot) -> Result<()> {
     if msg.as_message().to_string() == "ping" {
         let resp = msg.reply("pong", &bot).await?;
@@ -20,6 +20,17 @@ async fn ping_pong_handler<T: Conversation>(msg: T, bot: Bot) -> Result<()> {
     Ok(())
 }
 
+/// 这个例子说明了交互式的对话是怎么进行的。该 handler 只对群聊消息生效。
+///
+/// 消息过程：
+/// ```text
+///                                     复读一下 <
+/// > 真的要复读吗？请在 10 秒内进行确认
+///                                        确认 <
+/// > 确认成功，复读下一句
+///                                Are you ok? <
+/// > Are you ok?
+/// ```
 async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     if group_msg.message.to_string() == "复读一下" {
         let next_msg = group_msg
@@ -55,11 +66,12 @@ async fn main() -> Result<()> {
     pretty_env_logger::init_timed();
     let (bot, con) = miraie::Bot::new(
         "127.0.0.1:18418",
+        // 我开发时使用的，你应该换成自己的
         "dZujVWpnxxXXE5b",
         std::env::var("MIRAIE_BOT_QQ")
             .expect("请设置 MIRAIE_BOT_QQ 环境变量")
             .parse()
-            .unwrap(),
+            .expect("无效的 MIRAIE_BOT_QQ 环境变量"),
     )
     .await?;
     info!("bot connected.");

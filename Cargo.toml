@@ -5,6 +5,10 @@ authors = ["gwy15 <gwy15thu@gmail.com>"]
 edition = "2018"
 license = "AGPL-3.0"
 description = "基于 mirai 和 mirai-api-http 的 QQ 机器人框架"
+documentation = "https://docs.rs/miraie"
+homepage = "https://github.com/gwy15/miraie"
+repository = "https://github.com/gwy15/miraie"
+keywords = ["bot", "qq", "mirai"]
 
 [features]
 default = ["native-tls"]
