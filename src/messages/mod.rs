@@ -1,11 +1,13 @@
 //! mirai 传回的消息，群聊、私聊、事件等
-pub mod chain;
+mod chain;
 mod chain_xml;
-pub mod event;
+mod event;
 pub mod friend;
 pub mod group;
-pub mod stranger;
-pub mod temp;
+mod stranger;
+mod stream;
+mod temp;
+mod traits;
 
 use std::convert::TryFrom;
 
@@ -17,6 +19,7 @@ use serde::Deserialize;
 use serde_json::Value;
 pub use stranger::StrangerMessage;
 pub use temp::TempMessage;
+pub use traits::Conversation;
 
 /// 接收到的消息，可能是群消息、私聊消息、事件等
 #[derive(Debug, Clone)]

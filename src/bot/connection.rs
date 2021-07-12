@@ -113,6 +113,7 @@ impl Connection {
             // 如果是 request 的 response
             Some(sync_id) if sync_id > 0 => {
                 debug!("received packet with sync_id = {}", sync_id);
+                debug!("packet data: {:?}", packet.data);
                 if let Err(e) = self.response_channel.send((sync_id, packet.data)) {
                     // 这里可能失败，可能超时，接收方已经关闭了，甚至根本没有发送这个请求
                     warn!("send request response failed: {:?}", e);

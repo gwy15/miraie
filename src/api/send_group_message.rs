@@ -14,17 +14,10 @@ pub struct Request {
     pub message: MessageChain,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Response {
-    /// 标识本条消息，用于撤回和引用回复
-    #[serde(rename = "messageId")]
-    pub message_id: i64,
-}
-
 crate::api!(
     command = "sendGroupMessage",
     subcommand = None,
     field = "flatten",
     Request,
-    Response
+    super::common::SendMessageResponse
 );
