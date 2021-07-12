@@ -4,7 +4,7 @@
 use chrono::{DateTime, Utc};
 
 use super::{friend, group};
-use crate::bot::QQ;
+use crate::{api, bot::QQ};
 
 /// 事件，如管理员收到的加群请求等
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
@@ -458,6 +458,31 @@ auto_impl! {
     BotInvitedJoinGroupRequestEvent,
     CommandExecutedEvent,
 }
+
+// ========= 实现 approve ============
+#[async_trait]
+pub trait Approvable {
+    async fn approve(&self, bot: &crate::Bot) -> crate::Result<()>;
+}
+#[async_trait]
+impl Approvable for BotInvitedJoinGroupRequestEvent {
+    async fn approve(&self, bot: &crate::Bot) -> crate::Result<()> {
+        let r = bot
+            .request(api::resp_botInvitedJoinGroupRequestEvent::Request {
+                session_key: "".to_string(),
+                event_id: self.event_id,
+                from_id: self.from_id,
+                group_id: self.group_id,
+                operate: 0,
+                message: "".to_string(),
+            })
+            .await?;
+        info!("approve result: {:?}", r);
+        Ok(())
+    }
+}
+
+// TODO: add more
 
 #[test]
 fn test_parse_event() {

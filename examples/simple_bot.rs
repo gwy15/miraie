@@ -1,7 +1,7 @@
 use anyhow::*;
 use futures::StreamExt;
 use log::*;
-use miraie::prelude::*;
+use miraie::{messages::events::Approvable, prelude::*};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -61,8 +61,10 @@ async fn on_event(event: Event) {
     info!("event: {:?}", event);
 }
 
-async fn on_member_mute(event: events::MemberMuteEvent) -> Result<()> {
-    info!("member muted: {:?}", event);
+async fn on_group_invite(event: events::BotInvitedJoinGroupRequestEvent, bot: Bot) -> Result<()> {
+    info!("邀请我进去群: {:?}", event);
+    info!("加入群！");
+    event.approve(&bot).await?;
     Ok(())
 }
 
@@ -87,7 +89,7 @@ async fn main() -> Result<()> {
         .handler(ping_pong_handler::<FriendMessage>)
         .handler(on_group_msg_confirm)
         .handler(on_event)
-        .handler(on_member_mute);
+        .handler(on_group_invite);
 
     con.run().await?;
     Ok(())

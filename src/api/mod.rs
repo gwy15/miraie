@@ -9,6 +9,10 @@ pub mod recall;
 pub mod send_friend_message;
 pub mod send_group_message;
 
+// 私有 mod，用 approve 方法隐藏实现
+#[allow(non_snake_case)]
+pub(crate) mod resp_botInvitedJoinGroupRequestEvent;
+
 use serde::Serialize;
 
 use crate::Result;
