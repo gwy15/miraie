@@ -33,7 +33,8 @@ pub mod prelude {
         api,
         bot::QQ,
         messages::{
-            Conversation, Event, FriendMessage, GroupMessage, Message, MessageBlock, MessageChain,
+            events, Conversation, Event, FriendMessage, GroupMessage, Message, MessageBlock,
+            MessageChain,
         },
         Api, App, Bot,
     };

@@ -1,7 +1,7 @@
 //! mirai 传回的消息，群聊、私聊、事件等
 mod chain;
 mod chain_xml;
-mod event;
+pub mod events;
 pub mod friend;
 pub mod group;
 mod stranger;
@@ -12,7 +12,7 @@ mod traits;
 use std::convert::TryFrom;
 
 pub use chain::{MessageBlock, MessageChain};
-pub use event::Event;
+pub use events::Event;
 pub use friend::FriendMessage;
 pub use group::GroupMessage;
 use serde::Deserialize;

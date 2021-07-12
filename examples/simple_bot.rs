@@ -56,8 +56,14 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     Ok(())
 }
 
+/// 打印所有的事件
 async fn on_event(event: Event) {
     info!("event: {:?}", event);
+}
+
+async fn on_member_mute(event: events::MemberMuteEvent) -> Result<()> {
+    info!("member muted: {:?}", event);
+    Ok(())
 }
 
 #[tokio::main]
@@ -80,7 +86,8 @@ async fn main() -> Result<()> {
     bot.handler(ping_pong_handler::<GroupMessage>)
         .handler(ping_pong_handler::<FriendMessage>)
         .handler(on_group_msg_confirm)
-        .handler(on_event);
+        .handler(on_event)
+        .handler(on_member_mute);
 
     con.run().await?;
     Ok(())
