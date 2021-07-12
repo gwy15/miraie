@@ -150,7 +150,7 @@ impl Bot {
     }
 
     /// 获取一个全部消息的 stream
-    pub fn messages(&self) -> impl Stream<Item = Message> + Unpin {
+    pub fn messages(&self) -> impl Stream<Item = Message> + Unpin + Send {
         let mut ch = self.message_channel.subscribe();
 
         let s = async_stream::stream! {
@@ -162,7 +162,7 @@ impl Bot {
     }
 
     /// 获取一个全部群聊消息的 stream
-    pub fn group_messages(&self) -> impl Stream<Item = GroupMessage> + Unpin {
+    pub fn group_messages(&self) -> impl Stream<Item = GroupMessage> + Unpin + Send {
         self.messages().filter_map(|msg| {
             ready(match msg {
                 Message::Group(msg) => Some(msg),
@@ -172,7 +172,7 @@ impl Bot {
     }
 
     /// 获取一个私聊消息的 stream
-    pub fn friend_messages(&self) -> impl Stream<Item = FriendMessage> + Unpin {
+    pub fn friend_messages(&self) -> impl Stream<Item = FriendMessage> + Unpin + Send {
         self.messages().filter_map(|msg| {
             ready(match msg {
                 Message::Friend(msg) => Some(msg),
@@ -182,7 +182,7 @@ impl Bot {
     }
 
     /// 获取一个事件的 stream
-    pub fn events(&self) -> impl Stream<Item = Event> + Unpin {
+    pub fn events(&self) -> impl Stream<Item = Event> + Unpin + Send {
         self.messages().filter_map(|msg| {
             ready(match msg {
                 Message::Event(evt) => Some(evt),

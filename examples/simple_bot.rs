@@ -1,14 +1,11 @@
 use anyhow::*;
 use futures::StreamExt;
 use log::*;
-use miraie::{
-    api,
-    messages::{Event, GroupMessage},
-    App, Bot,
-};
+use miraie::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
 
+/// 实现一个最简单的 ping-pong 服务
 async fn on_group_msg_ping_pong(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     if group_msg.message.to_string() == "ping" {
         let resp = group_msg.reply("pong", &bot).await?;
@@ -40,7 +37,7 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
                 .context("连接断开了哦")?;
             info!("复读这一句话：{:?}", next);
             // 进行一个读的复
-            next.unquote_reply(next.message.clone(), &bot).await?;
+            next.reply_unquote(next.message.clone(), &bot).await?;
         } else {
             group_msg.reply("确认失败", &bot).await?;
         }

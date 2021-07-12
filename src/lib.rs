@@ -11,6 +11,8 @@
 extern crate log;
 #[macro_use]
 extern crate serde;
+#[macro_use]
+extern crate async_trait;
 
 pub mod api;
 
@@ -30,7 +32,9 @@ pub mod prelude {
     pub use super::{
         api,
         bot::QQ,
-        messages::{FriendMessage, GroupMessage, Message, MessageBlock, MessageChain},
+        messages::{
+            Conversation, Event, FriendMessage, GroupMessage, Message, MessageBlock, MessageChain,
+        },
         Api, App, Bot,
     };
 }

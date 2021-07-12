@@ -1,85 +1,9 @@
 //! 跟私聊、好友有关的模块
-use std::time::Duration;
 
-use futures::{future::ready, Stream, StreamExt};
+use futures::{future::ready, StreamExt};
 
-use super::MessageChain;
-use crate::{api, bot::QQ, Bot, Error, Result};
-
-/// 好友私聊信息
-#[derive(Debug, Clone, Deserialize)]
-pub struct FriendMessage {
-    pub sender: FriendMember,
-    #[serde(rename = "messageChain")]
-    pub message: MessageChain,
-}
-
-impl FriendMessage {
-    /// 返回一个消息的后续回复的 stream
-    pub fn followed_messages(&self, bot: &Bot) -> impl Stream<Item = FriendMessage> + Unpin {
-        let sender_id = self.sender.id;
-        bot.friend_messages()
-            .filter(move |msg| ready(msg.sender.id == sender_id))
-    }
-
-    /// 回复这条消息
-    pub async fn reply(
-        &self,
-        message: impl Into<MessageChain>,
-        bot: &Bot,
-    ) -> Result<api::send_friend_message::Response> {
-        bot.request(api::send_friend_message::Request {
-            target: self.sender.id,
-            quote: self.message.message_id(),
-            message: message.into(),
-        })
-        .await
-    }
-
-    /// 不引用，直接回复这条消息
-    pub async fn unquote_reply(
-        &self,
-        message: impl Into<MessageChain>,
-        bot: &Bot,
-    ) -> Result<api::send_friend_message::Response> {
-        bot.request(api::send_friend_message::Request {
-            target: self.sender.id,
-            quote: None,
-            message: message.into(),
-        })
-        .await
-    }
-
-    /// 返回一条消息并等待回复，返回回复的消息。默认超时 10s
-    /// # Example
-    /// ```plaintext,no_run
-    /// let msg: FriendMessage;
-    /// let confirm = msg.prompt("你确定吗？").await?;
-    /// if confirm.message.as_confirm().unwrap_or_default() {
-    ///     // do something...
-    /// }
-    /// ```
-    pub async fn prompt(&self, message: impl Into<MessageChain>, bot: &Bot) -> Result<Self> {
-        self.prompt_timeout(message, bot, Duration::from_secs(10))
-            .await
-    }
-
-    /// 返回一条消息并等待回复，返回回复的消息。
-    pub async fn prompt_timeout(
-        &self,
-        message: impl Into<MessageChain>,
-        bot: &Bot,
-        timeout: Duration,
-    ) -> Result<Self> {
-        self.reply(message, bot).await?;
-        let mut followed = self.followed_messages(bot);
-        let msg = followed.next();
-        let msg = tokio::time::timeout(timeout, msg)
-            .await
-            .map_err(|_| Error::ResponseTimeout)?;
-        msg.ok_or(Error::ConnectionClosed)
-    }
-}
+use super::{stream::MessageStream, traits::Conversation, MessageChain};
+use crate::{api, bot::QQ, Bot, Result};
 
 /// 私聊消息的发送者
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
@@ -89,6 +13,58 @@ pub struct FriendMember {
     pub nickname: String,
     /// 好友备注
     pub remark: String,
+}
+
+/// 好友私聊信息
+#[derive(Debug, Clone, Deserialize)]
+pub struct FriendMessage {
+    pub sender: FriendMember,
+    #[serde(rename = "messageChain")]
+    pub message: MessageChain,
+}
+
+#[async_trait]
+impl Conversation for FriendMessage {
+    type ReplyResponse = api::send_friend_message::Response;
+
+    fn followed_group_message(&self, bot: &Bot) -> MessageStream<Self> {
+        let sender_id = self.sender.id;
+
+        MessageStream::new(
+            bot.friend_messages()
+                .filter(move |msg| ready(msg.sender.id == sender_id)),
+        )
+    }
+
+    fn followed_sender_messages(&self, bot: &Bot) -> MessageStream<Self> {
+        self.followed_group_message(bot)
+    }
+
+    async fn reply(
+        &self,
+        message: impl Into<MessageChain> + Send + 'static,
+        bot: &Bot,
+    ) -> Result<Self::ReplyResponse> {
+        bot.request(api::send_friend_message::Request {
+            target: self.sender.id,
+            quote: self.message.message_id(),
+            message: message.into(),
+        })
+        .await
+    }
+
+    async fn reply_unquote(
+        &self,
+        message: impl Into<MessageChain> + Send + 'static,
+        bot: &Bot,
+    ) -> Result<Self::ReplyResponse> {
+        bot.request(api::send_friend_message::Request {
+            target: self.sender.id,
+            quote: None,
+            message: message.into(),
+        })
+        .await
+    }
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for FriendMessage {
