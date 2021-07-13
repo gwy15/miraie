@@ -15,6 +15,12 @@ pub struct FriendMember {
     pub remark: String,
 }
 
+impl From<FriendMember> for QQ {
+    fn from(member: FriendMember) -> Self {
+        member.id
+    }
+}
+
 /// 好友私聊信息
 #[derive(Debug, Clone, Deserialize)]
 pub struct FriendMessage {

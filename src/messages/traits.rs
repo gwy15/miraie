@@ -1,5 +1,5 @@
 use super::{stream::MessageStream, MessageChain};
-use crate::{api, Bot, Error, Result};
+use crate::{api, bot::QQ, Bot, Error, Result};
 use futures::StreamExt;
 use std::time::{Duration, Instant};
 
@@ -8,8 +8,10 @@ use std::time::{Duration, Instant};
 /// - 对本条消息进行回复
 #[async_trait]
 pub trait Conversation: Sized {
-    /// 发送者的类型
-    type Sender;
+    /// 发送者的类型，对于私聊类型就是 [`crate::messages::friend::FriendMember`]，
+    /// 对于群聊是 [`crate::messages::group::GroupMember`]；
+    /// 这两者都实现了 `Into<QQ>`
+    type Sender: Into<QQ>;
 
     /// 获取发送者信息
     fn sender(&self) -> &Self::Sender;

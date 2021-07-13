@@ -39,6 +39,12 @@ pub struct GroupMember {
     pub group: Group,
 }
 
+impl From<GroupMember> for QQ {
+    fn from(src: GroupMember) -> Self {
+        src.id
+    }
+}
+
 /// 成员在群里的权限，可能为群员、管理员或群主
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "UPPERCASE")]
