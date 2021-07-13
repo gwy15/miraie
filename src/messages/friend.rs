@@ -21,6 +21,12 @@ impl From<FriendMember> for QQ {
     }
 }
 
+impl AsRef<QQ> for FriendMember {
+    fn as_ref(&self) -> &QQ {
+        &self.id
+    }
+}
+
 /// 好友私聊信息
 #[derive(Debug, Clone, Deserialize)]
 pub struct FriendMessage {

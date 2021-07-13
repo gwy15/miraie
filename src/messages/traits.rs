@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 pub trait Conversation: Sized {
     /// 发送者的类型，对于私聊类型就是 [`crate::messages::friend::FriendMember`]，
     /// 对于群聊是 [`crate::messages::group::GroupMember`]；
-    /// 这两者都实现了 `Into<QQ>`
-    type Sender: Into<QQ>;
+    /// 这两者都实现了 `AsRef<QQ>`
+    type Sender: AsRef<QQ>;
 
     /// 获取发送者信息
     fn sender(&self) -> &Self::Sender;
