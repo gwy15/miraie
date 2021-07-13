@@ -7,7 +7,7 @@ use tokio::time::sleep;
 
 /// 实现一个最简单的 ping-pong 服务，它会对消息 ping 回复 pong，并在五秒后撤回该 pong。
 async fn ping_pong_handler<T: Conversation>(msg: T, bot: Bot) -> Result<()> {
-    if msg.as_message().to_string() == "ping" {
+    if msg.as_message().to_string().trim() == "ping" {
         let resp = msg.reply("pong", &bot).await?;
         // 五秒后撤回
         sleep(Duration::from_secs(5)).await;
