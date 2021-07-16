@@ -70,6 +70,7 @@ impl Connection {
         }
     }
 
+    /// 阻塞等待跟 mirai-api-http 的连接关闭或者结束信号
     pub async fn run(mut self) -> Result<()> {
         loop {
             tokio::select! {
@@ -92,11 +93,38 @@ impl Connection {
                         // API 请求通道被关闭
                         None => break,
                     }
-
+                },
+                _ = Self::signal() => {
+                    break;
                 }
             }
         }
         Ok(())
+    }
+
+    /// 等待结束信号
+    #[cfg(not(unix))]
+    async fn signal() {
+        use tokio::signal;
+
+        let _ = signal::ctrl_c().await;
+        info!("ctrl-c received. quit.");
+    }
+
+    #[cfg(unix)]
+    async fn signal() {
+        use tokio::signal;
+
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+
+        tokio::select! {
+            _ = signal::ctrl_c() => {
+                info!("ctrl-c received. quitting.");
+            },
+            _ = sigterm.recv() => {
+                info!("SIGTERM recived. quitting.");
+            }
+        }
     }
 
     async fn on_ws_msg(&mut self, msg: WsMessage) -> Result<()> {
