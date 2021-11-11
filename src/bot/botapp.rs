@@ -202,7 +202,7 @@ impl Bot {
         })
     }
 
-    async fn process_keyword_command(msg: Message) {
+    async fn process_keyword_command(_msg: Message) {
         debug!("processing keyword command");
         // TODO
     }
