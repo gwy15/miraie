@@ -1,5 +1,6 @@
 use core::future::Future;
 
+/// `Func` 主要是解决 rust 只提供 `Fn(T) -> O` 不提供 `Fn<((T,), O)>` 的问题
 pub trait Func<I, Fut>: Send + Sync + Clone + Copy + 'static
 where
     I: Send + 'static,

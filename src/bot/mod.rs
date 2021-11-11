@@ -8,7 +8,7 @@ mod utils;
 pub use basic_types::*;
 pub use botapp::Bot;
 pub use connection::Connection;
-pub(crate) use keyword_command::KeywordCommandHandler;
+pub(crate) use keyword_command::{KeywordCommandHandler, KeywordCommandHandlers};
 
 type WebsocketStream = async_tungstenite::WebSocketStream<async_tungstenite::tokio::ConnectStream>;
 use async_tungstenite::tungstenite::Message as WsMessage;

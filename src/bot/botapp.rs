@@ -1,11 +1,11 @@
-use super::{connection::Connection, KeywordCommandHandler, QQ};
+use super::{connection::Connection, KeywordCommandHandler, KeywordCommandHandlers, QQ};
 use crate::{
     api::ApiRequest,
     messages::{Event, FriendMessage, GroupMessage, Message},
+    msg_framework::{FromRequest, Request},
     App, Error, Result,
 };
-use futures::{Stream, StreamExt};
-use parking_lot::RwLock;
+use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
 use std::{
     future::ready,
@@ -27,7 +27,7 @@ pub struct Bot {
     ///
     response_channel: broadcast::Sender<(i64, Value)>,
     ///
-    kw_command_handlers: Arc<RwLock<Vec<KeywordCommandHandler>>>,
+    pub(crate) kw_command_handlers: KeywordCommandHandlers,
 }
 
 impl crate::msg_framework::App for Bot {
@@ -88,7 +88,7 @@ impl Bot {
             message_channel: tx,
             request_channel: request_tx,
             response_channel: response_tx,
-            kw_command_handlers: Arc::new(RwLock::new(vec![])),
+            kw_command_handlers: KeywordCommandHandlers::new(),
         };
 
         // 注册关键词 handler
@@ -202,9 +202,47 @@ impl Bot {
         })
     }
 
-    async fn process_keyword_command(_msg: Message) {
+    pub fn command<F, I, Fut>(self, command: impl Into<String>, handler: F) -> Self
+    where
+        F: crate::msg_framework::Func<I, Fut>,
+        I: Send + 'static + FromRequest<Bot>,
+        Fut: Future + Send + 'static,
+    {
+        let mut handlers = self.kw_command_handlers.0.write();
+        let pair = (
+            command.into(),
+            Arc::new(KeywordCommandHandler::new(handler)),
+        );
+        handlers.push(pair);
+        std::mem::drop(handlers);
+
+        self
+    }
+
+    async fn process_keyword_command(msg: Message, handlers: KeywordCommandHandlers, bot: Bot) {
         debug!("processing keyword command");
-        // TODO
+        let msg_s = match &msg {
+            Message::Friend(f) => f.message.to_string(),
+            Message::Group(g) => g.message.to_string(),
+            Message::Temp(t) => t.message.to_string(),
+            Message::Stranger(s) => s.message.to_string(),
+            Message::Event(_ev) => {
+                return;
+            }
+        };
+        let handlers = handlers.0.read();
+        // TODO: 这里可以用前缀树
+        for (command, handler) in handlers.iter() {
+            if msg_s.starts_with(command) {
+                let app = bot.clone();
+                let message = msg.clone();
+                let handler = handler.clone();
+                let fut = async move {
+                    handler.handle(Request { app, message }).await;
+                };
+                tokio::spawn(fut);
+            }
+        }
     }
 }
 

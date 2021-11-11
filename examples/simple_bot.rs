@@ -89,7 +89,11 @@ async fn main() -> Result<()> {
         .handler(ping_pong_handler::<FriendMessage>)
         .handler(on_group_msg_confirm)
         .handler(on_event)
-        .handler(on_group_invite);
+        .handler(on_group_invite)
+        .command("在吗", |msg: GroupMessage, bot: Bot| async move {
+            msg.reply("嘎哈", &bot).await?;
+            Result::<(), Error>::Ok(())
+        });
 
     con.run().await?;
     Ok(())
