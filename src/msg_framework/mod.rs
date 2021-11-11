@@ -5,6 +5,6 @@ mod requests;
 #[cfg(test)]
 mod test_msg_framework;
 
-pub use app::App;
+pub use app::{App, Return};
 pub use func::Func;
 pub use requests::{FromRequest, Request};

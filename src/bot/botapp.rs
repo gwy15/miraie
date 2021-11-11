@@ -2,7 +2,7 @@ use super::{connection::Connection, KeywordCommandHandler, KeywordCommandHandler
 use crate::{
     api::ApiRequest,
     messages::{Event, FriendMessage, GroupMessage, Message},
-    msg_framework::{FromRequest, Request},
+    msg_framework::{FromRequest, Request, Return},
     App, Error, Result,
 };
 use futures::{Future, Stream, StreamExt};
@@ -202,11 +202,30 @@ impl Bot {
         })
     }
 
+    /// 通过 **前缀关键词** 来注册一个回调。目前不可取消。
+    ///
+    /// 只有前缀完全匹配的消息才会进行匹配。
+    ///
+    /// `command` 方法比 `handler` 的方法相对而言实现更加高效，如果可能，尽量使用 `command` 来注册。
+    /// 
+    /// # Example
+    /// ```no_run
+    /// # use miraie::prelude::*;
+    /// # use anyhow::*;
+    /// # tokio_test::block_on(async {
+    /// # let (bot, _) = Bot::new("127.0.0.1", "secret", QQ(123456)).await.unwrap();
+    /// bot.command("在吗", |msg: GroupMessage, bot: Bot| async move {
+    ///     msg.reply("嘎哈", &bot).await?;
+    ///     Result::<(), Error>::Ok(())
+    /// });
+    /// # });
+    /// ```
     pub fn command<F, I, Fut>(self, command: impl Into<String>, handler: F) -> Self
     where
         F: crate::msg_framework::Func<I, Fut>,
         I: Send + 'static + FromRequest<Bot>,
         Fut: Future + Send + 'static,
+        Fut::Output: Return,
     {
         let mut handlers = self.kw_command_handlers.0.write();
         let pair = (
