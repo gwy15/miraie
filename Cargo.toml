@@ -2,7 +2,7 @@
 name = "miraie"
 version = "0.1.11"
 authors = ["gwy15 <gwy15thu@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "AGPL-3.0"
 description = "基于 mirai 和 mirai-api-http 的 QQ 机器人框架"
 documentation = "https://docs.rs/miraie"
@@ -11,14 +11,14 @@ repository = "https://github.com/gwy15/miraie"
 keywords = ["bot", "qq", "mirai"]
 
 [features]
-default = ["native-tls"]
+default = [ "native-tls" ]
 native-tls = [ "async-tungstenite/tokio-native-tls" ]
 rustls = [ "async-tungstenite/tokio-rustls" ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.0", features = ["sync", "rt", "signal"] }
+tokio = { version = "1.0", features = ["sync", "rt", "signal", "macros", "time"] }
 futures = "0.3"
 async-stream = "0.3.2"
 async-tungstenite = { version = "0.13.1", default-features = false }
@@ -39,7 +39,7 @@ regex = "1.5.4"
 lazy_static = "1.4.0"
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["rt-multi-thread", "macros", "time"] }
+tokio = { version = "1.0", features = ["rt-multi-thread"] }
 tokio-test = "0.4.2"
 pretty_env_logger = "0.4.0"
 dotenv = "0.15.0"
