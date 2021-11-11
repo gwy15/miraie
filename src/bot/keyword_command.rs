@@ -13,7 +13,7 @@ type Request = crate::msg_framework::Request<Bot>;
 
 #[derive(Clone, Default)]
 pub(crate) struct KeywordCommandHandlers(
-    pub(crate) Arc<RwLock<Vec<(String, Arc<KeywordCommandHandler>)>>>,
+    pub(crate) Arc<RwLock<Vec<(String, KeywordCommandHandler)>>>,
 );
 
 impl KeywordCommandHandlers {
@@ -23,15 +23,13 @@ impl KeywordCommandHandlers {
 }
 impl FromRequest<Bot> for KeywordCommandHandlers {
     fn from_request(request: crate::msg_framework::Request<Bot>) -> Option<Self> {
-        Some(request.app.kw_command_handlers.clone())
+        Some(request.app.kw_command_handlers)
     }
 }
 
-/// 关键词消息处理的结构
-pub struct KeywordCommandHandler {
-    /// 对消息的处理回调，是函数
-    handler: Box<dyn RequestHandler>,
-}
+/// 关键词消息处理的处理回调，是函数
+#[derive(Clone)]
+pub struct KeywordCommandHandler(Arc<dyn RequestHandler>);
 
 impl KeywordCommandHandler {
     pub fn new<F, T, Fut>(f: F) -> Self
@@ -45,13 +43,11 @@ impl KeywordCommandHandler {
             f,
             _phantom: PhantomData,
         };
-        Self {
-            handler: Box::new(handler),
-        }
+        Self(Arc::new(handler))
     }
 
     pub(crate) async fn handle(&self, request: Request) {
-        self.handler.handle_request(request).await;
+        self.0.handle_request(request).await;
     }
 }
 

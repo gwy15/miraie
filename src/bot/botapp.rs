@@ -9,7 +9,6 @@ use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
 use std::{
     future::ready,
-    sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::sync::{broadcast, mpsc};
@@ -207,7 +206,7 @@ impl Bot {
     /// 只有前缀完全匹配的消息才会进行匹配。
     ///
     /// `command` 方法比 `handler` 的方法相对而言实现更加高效，如果可能，尽量使用 `command` 来注册。
-    /// 
+    ///
     /// # Example
     /// ```no_run
     /// # use miraie::prelude::*;
@@ -228,10 +227,7 @@ impl Bot {
         Fut::Output: Return,
     {
         let mut handlers = self.kw_command_handlers.0.write();
-        let pair = (
-            command.into(),
-            Arc::new(KeywordCommandHandler::new(handler)),
-        );
+        let pair = (command.into(), KeywordCommandHandler::new(handler));
         handlers.push(pair);
         std::mem::drop(handlers);
 
