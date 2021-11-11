@@ -1,13 +1,15 @@
-use super::{connection::Connection, QQ};
+use super::{connection::Connection, KeywordCommandHandler, QQ};
 use crate::{
     api::ApiRequest,
     messages::{Event, FriendMessage, GroupMessage, Message},
-    Error, Result,
+    App, Error, Result,
 };
 use futures::{Stream, StreamExt};
+use parking_lot::RwLock;
 use serde_json::Value;
 use std::{
     future::ready,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::sync::{broadcast, mpsc};
@@ -24,6 +26,8 @@ pub struct Bot {
     request_channel: mpsc::Sender<(i64, Box<dyn ApiRequest>)>,
     ///
     response_channel: broadcast::Sender<(i64, Value)>,
+    ///
+    kw_command_handlers: Arc<RwLock<Vec<KeywordCommandHandler>>>,
 }
 
 impl crate::msg_framework::App for Bot {
@@ -80,11 +84,15 @@ impl Bot {
         let connection =
             super::Connection::new(ws_stream, request_rx, tx.clone(), response_tx.clone());
 
-        let bot = Bot {
+        let mut bot = Bot {
             message_channel: tx,
             request_channel: request_tx,
             response_channel: response_tx,
+            kw_command_handlers: Arc::new(RwLock::new(vec![])),
         };
+
+        // 注册关键词 handler
+        bot = bot.handler(Self::process_keyword_command);
 
         Ok((bot, connection))
     }
@@ -192,6 +200,11 @@ impl Bot {
                 _ => None,
             })
         })
+    }
+
+    async fn process_keyword_command(msg: Message) {
+        debug!("processing keyword command");
+        // TODO
     }
 }
 
