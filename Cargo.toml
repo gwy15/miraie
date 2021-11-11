@@ -1,6 +1,6 @@
 [package]
 name = "miraie"
-version = "0.1.11"
+version = "0.2.0-alpha.1"
 authors = ["gwy15 <gwy15thu@gmail.com>"]
 edition = "2021"
 license = "AGPL-3.0"
