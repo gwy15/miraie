@@ -12,7 +12,7 @@ pub mod api;
 pub mod bot;
 pub mod error;
 pub mod messages;
-mod msg_framework;
+pub mod msg_framework;
 
 pub use api::Api;
 pub use bot::Bot;
