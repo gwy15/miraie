@@ -12,7 +12,10 @@ use std::{
 };
 use tokio::sync::{broadcast, mpsc};
 
-/// [`Bot`] 用来保存一个 bot 中的状态，如消息队列、跟连接的沟通、数据库连接等。
+/// [`Bot`] 代表跟一个 mirai QQ 机器人的链接。
+/// 内部保存 bot 中的状态，如消息队列、跟连接的沟通、数据库连接等。
+///
+/// [`Bot`] 可以用来注册消息处理接口、获取机器人的消息流、主动发起调用等。
 #[derive(Clone)]
 pub struct Bot {
     /// 在 handler 内广播消息，如群消息等

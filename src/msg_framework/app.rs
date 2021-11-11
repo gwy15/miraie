@@ -22,10 +22,13 @@ impl Return for Result<(), anyhow::Error> {
 /// App 需要提供一个 broadcast 类型的通信信道。
 ///
 pub trait App: Sized + Clone + Send + Sync + 'static {
+    /// App 内广播的消息类型。对于 [`miraie::Bot`] 来说，传递的是 [`miraie::Message`]。
     type Message: Clone + Send + 'static;
 
+    /// 获取 App 内传递的消息广播通道。
     fn event_bus(&self) -> broadcast::Sender<Self::Message>;
 
+    /// 注册一个新的消息广播处理 handler。
     fn handler<F, I, Fut>(self, f: F) -> Self
     where
         F: Func<I, Fut>,
