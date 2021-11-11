@@ -75,7 +75,11 @@ async fn main() -> Result<()> {
     // ping pong 服务对群聊和私聊都进行注册
     bot.handler(ping_pong_handler::<GroupMessage>)
         .handler(ping_pong_handler::<FriendMessage>)
-        .handler(on_group_msg_confirm);
+        .handler(on_group_msg_confirm)
+        .command("在吗", |msg: GroupMessage, bot: Bot| async move {
+            msg.reply("嘎哈", &bot).await?;
+            Result::<(), Error>::Ok(())
+        });
 
     // 取消注释下面一行以运行bot
     // con.run().await?;
