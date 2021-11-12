@@ -89,7 +89,7 @@ async fn main() -> Result<()> {
     bot.command("你好", |_: GroupMessage| async { "你好" })
         // 返回值也可以是 `Result<String>`
         .command("在吗", |_: GroupMessage| async {
-            anyhow::Result::<&'static str>::Ok("嗯嗯")
+            Result::<&'static str>::Ok("嗯嗯")
         })
         // 或者手动调用 `Bot` 的 `reply` 接口
         .command("在干什么", |msg: GroupMessage, bot: Bot| async move {
