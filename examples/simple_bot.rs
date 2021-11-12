@@ -96,6 +96,9 @@ async fn main() -> Result<()> {
             msg.reply("你有事吗", &bot).await?;
             Result::<(), Error>::Ok(())
         })
+        .command("嘉然我真的好喜欢你啊", |_: FriendMessage| async {
+            Some("...")
+        })
         // 下面的几个例子可以对所有的事件都进行注册，不会被关键词过滤
         // ping pong 服务对群聊和私聊都进行注册
         .handler(ping_pong_handler::<GroupMessage>)
