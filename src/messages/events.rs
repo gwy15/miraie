@@ -81,9 +81,9 @@ pub enum Event {
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for Event {
-    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
-        match request.message {
-            crate::messages::Message::Event(e) => Some(e),
+    fn from_request(request: &crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match &request.message {
+            crate::messages::Message::Event(e) => Some(e.clone()),
             _ => None,
         }
     }
@@ -411,11 +411,9 @@ macro_rules! auto_impl {
     };
     (@impl $event:tt) => {
         impl crate::msg_framework::FromRequest<crate::Bot> for $event {
-            fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
-                match request.message {
-                    crate::messages::Message::Event(
-                        Event::$event(e)
-                    ) => Some(e),
+            fn from_request(request: &crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+                match &request.message {
+                    crate::messages::Message::Event( Event::$event(e) ) => Some(e.clone()),
                     _ => None,
                 }
             }

@@ -262,7 +262,7 @@ impl Bot {
 }
 
 impl crate::msg_framework::FromRequest<Bot> for Bot {
-    fn from_request(request: crate::msg_framework::Request<Bot>) -> Option<Self> {
-        Some(request.app)
+    fn from_request(request: &crate::msg_framework::Request<Bot>) -> Option<Self> {
+        Some(request.app.clone())
     }
 }

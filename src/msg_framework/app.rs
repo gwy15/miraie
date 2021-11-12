@@ -57,7 +57,7 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
                             // carries data, e.g., database connections, etc.
                             app: app.clone(),
                         };
-                        if let Some(input) = I::from_request(request) {
+                        if let Some(input) = I::from_request(&request) {
                             let fut = async move {
                                 let ret = (f).call(input).await;
                                 ret.on_return();

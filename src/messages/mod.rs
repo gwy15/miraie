@@ -32,8 +32,8 @@ pub enum Message {
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for Message {
-    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
-        Some(request.message)
+    fn from_request(request: &crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        Some(request.message.clone())
     }
 }
 

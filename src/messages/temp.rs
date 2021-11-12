@@ -10,9 +10,9 @@ pub struct TempMessage {
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for TempMessage {
-    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
-        match request.message {
-            crate::messages::Message::Temp(msg) => Some(msg),
+    fn from_request(request: &crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match &request.message {
+            crate::messages::Message::Temp(msg) => Some(msg.clone()),
             _ => None,
         }
     }

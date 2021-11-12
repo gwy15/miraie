@@ -245,6 +245,11 @@ impl MessageChain {
         Self::default()
     }
 
+    /// 移出消息内的内容，但是不转移所有权
+    pub fn take(&mut self) -> Self {
+        Self(std::mem::take(&mut self.0))
+    }
+
     /// 在消息里增加一个 at 人
     pub fn at(mut self, qq: QQ) -> Self {
         self.0.push(MessageBlock::At {

@@ -9,9 +9,9 @@ pub struct StrangerMessage {
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for StrangerMessage {
-    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
-        match request.message {
-            crate::messages::Message::Stranger(msg) => Some(msg),
+    fn from_request(request: &crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match &request.message {
+            crate::messages::Message::Stranger(msg) => Some(msg.clone()),
             _ => None,
         }
     }

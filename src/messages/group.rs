@@ -155,9 +155,9 @@ impl super::traits::Conversation for GroupMessage {
 }
 
 impl crate::msg_framework::FromRequest<crate::Bot> for GroupMessage {
-    fn from_request(request: crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
-        match request.message {
-            crate::messages::Message::Group(g) => Some(g),
+    fn from_request(request: &crate::msg_framework::Request<crate::Bot>) -> Option<Self> {
+        match &request.message {
+            crate::messages::Message::Group(g) => Some(g.clone()),
             _ => None,
         }
     }

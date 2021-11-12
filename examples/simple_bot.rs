@@ -41,14 +41,15 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
             group_msg.reply("确认成功，复读下一句", &bot).await?;
             info!("开始复读，等待下一句");
             // 等待下一句
-            let next = group_msg
+            let mut next = group_msg
                 .followed_sender_messages(&bot)
                 .next()
                 .await
                 .context("连接断开了哦")?;
             info!("复读这一句话：{:?}", next);
             // 进行一个读的复
-            next.reply_unquote(next.message.clone(), &bot).await?;
+            let msg = next.message.take();
+            next.reply_unquote(msg, &bot).await?;
         } else {
             group_msg.reply("确认失败", &bot).await?;
         }

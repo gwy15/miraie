@@ -13,7 +13,7 @@ pub trait FromRequest<A>: Sized
 where
     A: App,
 {
-    fn from_request(request: Request<A>) -> Option<Self>;
+    fn from_request(request: &Request<A>) -> Option<Self>;
 }
 
 mod _impl_from_request {
@@ -23,7 +23,7 @@ mod _impl_from_request {
     where
         A: App,
     {
-        fn from_request(_request: Request<A>) -> Option<Self> {
+        fn from_request(_request: &Request<A>) -> Option<Self> {
             Some(())
         }
     }
@@ -33,7 +33,7 @@ mod _impl_from_request {
         A: App,
         T: FromRequest<A>,
     {
-        fn from_request(request: Request<A>) -> Option<Self> {
+        fn from_request(request: &Request<A>) -> Option<Self> {
             let r = T::from_request(request)?;
             Some((r,))
         }
@@ -48,12 +48,11 @@ mod _impl_from_request {
                     $Ts: FromRequest<A>,
                 )*
             {
-                fn from_request(request: Request<A>) -> Option<Self> {
+                fn from_request(request: &Request<A>) -> Option<Self> {
                     Some((
                         $(
-                            // NOTE: 这里直接 clone request 其实有性能开销，但是 QQ 机器人并发不算很高
-                            // 懒得优化了，之后其实可以用 `Rc` 优化
-                            $Ts::from_request(request.clone())?
+                            // NOTE: 其实可以用 `Rc` 优化
+                            $Ts::from_request(request)?
                         ),*
                     ))
                 }

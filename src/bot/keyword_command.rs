@@ -22,8 +22,8 @@ impl KeywordCommandHandlers {
     }
 }
 impl FromRequest<Bot> for KeywordCommandHandlers {
-    fn from_request(request: crate::msg_framework::Request<Bot>) -> Option<Self> {
-        Some(request.app.kw_command_handlers)
+    fn from_request(request: &crate::msg_framework::Request<Bot>) -> Option<Self> {
+        Some(request.app.kw_command_handlers.clone())
     }
 }
 
@@ -85,7 +85,7 @@ where
     Fut::Output: Return,
 {
     fn handle_request(&self, request: Request) -> Pin<Box<dyn Future<Output = ()> + Send>> {
-        match T::from_request(request) {
+        match T::from_request(&request) {
             Some(input) => {
                 let fut = self.f.call(input);
                 Box::pin(async move {

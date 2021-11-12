@@ -22,13 +22,13 @@ async fn handler(msg: Msg, app: Application) {
 }
 
 impl FromRequest<Application> for Msg {
-    fn from_request(request: Request<Application>) -> Option<Self> {
-        Some(request.message)
+    fn from_request(request: &Request<Application>) -> Option<Self> {
+        Some(request.message.clone())
     }
 }
 impl FromRequest<Application> for Application {
-    fn from_request(request: Request<Application>) -> Option<Self> {
-        Some(request.app)
+    fn from_request(request: &Request<Application>) -> Option<Self> {
+        Some(request.app.clone())
     }
 }
 
