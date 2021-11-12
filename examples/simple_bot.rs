@@ -57,7 +57,7 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
     Ok(())
 }
 
-/// 打印所有的事件
+/// 在日志打印所有的事件（Event 事件，如管理员收到的加群请求等）
 async fn on_event(event: Event) {
     info!("event: {:?}", event);
 }
@@ -96,8 +96,13 @@ async fn main() -> Result<()> {
             msg.reply("你有事吗", &bot).await?;
             Result::<(), Error>::Ok(())
         })
+        // 返回 `Option<String>`
         .command("嘉然我真的好喜欢你啊", |_: FriendMessage| async {
             Some("...")
+        })
+        // 或者 `Result<Option<String>>` 等
+        .command("晚晚我真的好喜欢你啊", |_: FriendMessage| async {
+            Result::<_, Error>::Ok(Some("mua"))
         })
         // 下面的几个例子可以对所有的事件都进行注册，不会被关键词过滤
         // ping pong 服务对群聊和私聊都进行注册

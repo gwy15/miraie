@@ -23,16 +23,16 @@ async fn main() -> Result<()> {
 
     // 可以直接使用 `command` 注册指令，可以直接返回字符串以进行回复
     bot.command("你好", |_: GroupMessage| async { "你好" })
-        // 返回值也可以是 `Result<String>`
+        // 返回值也可以是 `Result<String>` 以更方便地处理错误
         .command("在吗", |_: GroupMessage| async {
             Result::<&'static str>::Ok("嗯嗯")
         })
-        // 或者手动调用 `Bot` 的 `reply` 接口
+        // 或者通过在函数参数中声明一个 `Bot` 以手动调用 `Bot` 的 `reply` 接口
         .command("在干什么", |msg: GroupMessage, bot: Bot| async move {
             msg.reply("你有事吗", &bot).await?;
             Result::<(), Error>::Ok(())
         })
-        // 下面的几个例子可以对所有的事件都进行注册，不会被关键词过滤
+        // 除了 command 接口，还有 handler 接口，下面的几个例子 **可以** 对所有的事件都进行注册，不会被关键词过滤
         // ping pong 服务对群聊和私聊都进行注册
         .handler(ping_pong_handler::<GroupMessage>)
         .handler(ping_pong_handler::<FriendMessage>)
@@ -114,4 +114,4 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
 
 
 # 运行时需要提供的环境变量
-- `MIRAIE_RESOURCE_ROOT`：资源的根目录，这个需要是 mirai 运行时的目录，如果 mirai 运行在机器 A 上，rust bot 运行在机器 B 上，这个需要是机器 A 上的路径。
+- `MIRAIE_RESOURCE_ROOT`：资源的根目录，这个需要是 mirai 运行时的目录。如果 mirai（Java）运行在机器 A 上，基于 miraie 的 rust bot 运行在机器 B 上，这个需要是机器 A 上的路径。

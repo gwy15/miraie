@@ -40,13 +40,46 @@ where
 {
     async fn on_return(self, request: Request<Bot>) {
         match self {
-            Ok(s) => {
-                s.on_return(request).await;
-            }
+            Ok(s) => s.on_return(request).await,
             Err(e) => {
                 error!("Error handling request: {}", e);
                 debug!("backtrace: {:?}", e);
             }
         }
+    }
+}
+
+#[async_trait]
+impl<T> Return<Bot> for Option<T>
+where
+    T: Into<MessageChain> + Send + 'static,
+{
+    async fn on_return(self, request: Request<Bot>) {
+        match self {
+            Some(msg) => msg.on_return(request).await,
+            None => {
+                debug!("return is none");
+            }
+        };
+    }
+}
+
+#[async_trait]
+impl<T, E> Return<Bot> for Result<Option<T>, E>
+where
+    T: Into<MessageChain> + Send + 'static,
+    E: Send + Display + Debug,
+{
+    async fn on_return(self, request: Request<Bot>) {
+        match self {
+            Ok(Some(msg)) => msg.on_return(request).await,
+            Ok(None) => {
+                debug!("return is none");
+            }
+            Err(e) => {
+                error!("Error handling request: {}", e);
+                debug!("backtrace: {:?}", e);
+            }
+        };
     }
 }
