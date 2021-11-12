@@ -3,16 +3,33 @@ use tokio::sync::broadcast;
 
 use super::{func::Func, FromRequest, Request};
 
-pub trait Return {
-    fn on_return(self);
+#[async_trait]
+pub trait Return<A>
+where
+    Self: Send,
+    A: App,
+{
+    async fn on_return(self, request: Request<A>);
 }
-impl Return for () {
-    fn on_return(self) {}
+#[async_trait]
+impl<A> Return<A> for ()
+where
+    A: App,
+{
+    async fn on_return(self, _request: Request<A>) {
+        {}
+    }
 }
-impl Return for Result<(), anyhow::Error> {
-    fn on_return(self) {
+
+#[async_trait]
+impl<A> Return<A> for Result<(), anyhow::Error>
+where
+    A: App,
+{
+    async fn on_return(self, _request: Request<A>) {
         if let Err(e) = self {
-            warn!("handler exec failed: {:?}", e);
+            warn!("handler exec failed: {}", e);
+            debug!("handler backtrace: {:?}", e);
         }
     }
 }
@@ -40,7 +57,7 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
         F: Func<I, Fut>,
         I: FromRequest<Self> + Send + 'static,
         Fut: Future + Send,
-        Fut::Output: Return + Send,
+        Fut::Output: Return<Self>,
     {
         let receiver = self.event_bus().subscribe();
         let app = self.clone();
@@ -60,7 +77,7 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
                         if let Some(input) = I::from_request(&request) {
                             let fut = async move {
                                 let ret = (f).call(input).await;
-                                ret.on_return();
+                                ret.on_return(request).await;
                             };
                             tokio::spawn(fut);
                         };

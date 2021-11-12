@@ -224,7 +224,7 @@ impl Bot {
         F: crate::msg_framework::Func<I, Fut>,
         I: Send + 'static + FromRequest<Bot>,
         Fut: Future + Send + 'static,
-        Fut::Output: Return,
+        Fut::Output: Return<Bot>,
     {
         let mut handlers = self.kw_command_handlers.0.write();
         let pair = (command.into(), KeywordCommandHandler::new(handler));

@@ -37,7 +37,7 @@ impl KeywordCommandHandler {
         F: crate::msg_framework::Func<T, Fut> + Send + Sync,
         T: Send + 'static + FromRequest<Bot>,
         Fut: Future + Send + 'static,
-        Fut::Output: Return,
+        Fut::Output: Return<Bot>,
     {
         let handler = Callable::<F, T, Fut> {
             f,
@@ -82,7 +82,7 @@ where
     F: Send + Sync + 'static + Func<T, Fut>,
     T: Send + 'static + FromRequest<Bot>,
     Fut: Send + 'static + Future,
-    Fut::Output: Return,
+    Fut::Output: Return<Bot>,
 {
     fn handle_request(&self, request: Request) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         match T::from_request(&request) {
@@ -90,7 +90,7 @@ where
                 let fut = self.f.call(input);
                 Box::pin(async move {
                     let ret = fut.await;
-                    ret.on_return();
+                    ret.on_return(request).await;
                 })
             }
             None => Box::pin(async {}),
