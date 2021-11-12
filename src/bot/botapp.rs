@@ -217,7 +217,7 @@ impl Bot {
     ///     msg.reply("嘎哈", &bot).await?;
     ///     Result::<(), Error>::Ok(())
     /// });
-    /// 
+    ///
     /// // 也可以直接返回 `String` 或者 `Result<String>` 之类的
     /// let bot = bot.command("在吗", |_: GroupMessage| async { "嘎哈" });
     /// # });
