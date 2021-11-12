@@ -60,7 +60,8 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
                 .context("连接断开了哦")?;
             log::info!("复读这一句话：{:?}", next);
             // 进行一个读的复
-            next.reply_unquote(next.message.clone(), &bot).await?;
+            let msg = next.message.take();
+            next.reply_unquote(msg, &bot).await?;
         } else {
             group_msg.reply("确认失败", &bot).await?;
         }
