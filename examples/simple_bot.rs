@@ -96,12 +96,13 @@ async fn main() -> Result<()> {
             msg.reply("你有事吗", &bot).await?;
             Result::<(), Error>::Ok(())
         })
-        // 返回 `Option<String>`
+        // 返回 `Option<String>`，注意这里的参数是 FriendMessage，因此这个接口只会对好友私聊消息生效。
+        // 如果想要对所有的消息都生效，可以将 `FriendMessage` 修改为 `Message`。
         .command("嘉然我真的好喜欢你啊", |_: FriendMessage| async {
             Some("...")
         })
         // 或者 `Result<Option<String>>` 等
-        .command("晚晚我真的好喜欢你啊", |_: FriendMessage| async {
+        .command("晚晚我真的好喜欢你啊", |_: Message| async {
             Result::<_, Error>::Ok(Some("mua"))
         })
         // 下面的几个例子可以对所有的事件都进行注册，不会被关键词过滤

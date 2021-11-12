@@ -93,7 +93,10 @@ where
                     ret.on_return(request).await;
                 })
             }
-            None => Box::pin(async {}),
+            None => {
+                debug!("failed to extract arguments from request.");
+                Box::pin(async {})
+            }
         }
     }
 }
