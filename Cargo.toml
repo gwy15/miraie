@@ -32,7 +32,6 @@ chrono = { version = "0.4.19", features = ["serde"] }
 parking_lot = "0.11.1"
 log = "0.4.14"
 thiserror = "1.0.26"
-anyhow = "1"
 
 # parse string to message chain
 regex = "1.5.4"
@@ -41,5 +40,6 @@ lazy_static = "1.4.0"
 [dev-dependencies]
 tokio = { version = "1.0", features = ["rt-multi-thread"] }
 tokio-test = "0.4.2"
+anyhow = "1"
 pretty_env_logger = "0.4.0"
 dotenv = "0.15.0"

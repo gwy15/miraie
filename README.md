@@ -17,6 +17,31 @@ use miraie::prelude::*;
 use anyhow::*;
 use futures::*;
 
+#[tokio::main]
+async fn main() -> Result<()> {
+    let (bot, con) = miraie::Bot::new("127.0.0.1:18418", "VERIFY_KEY", QQ(123456)).await?;
+
+    bot.command("你好", |_: GroupMessage| async { "你好" })
+        // 返回值也可以是 `Result<String>`
+        .command("在吗", |_: GroupMessage| async {
+            anyhow::Result::<&'static str>::Ok("嗯嗯")
+        })
+        // 或者手动调用 `Bot` 的 `reply` 接口
+        .command("在干什么", |msg: GroupMessage, bot: Bot| async move {
+            msg.reply("你有事吗", &bot).await?;
+            Result::<(), Error>::Ok(())
+        })
+        // 下面的几个例子可以对所有的事件都进行注册，不会被关键词过滤
+        // ping pong 服务对群聊和私聊都进行注册
+        .handler(ping_pong_handler::<GroupMessage>)
+        .handler(ping_pong_handler::<FriendMessage>)
+        .handler(on_group_msg_confirm);
+
+    // 取消注释下面一行以运行bot
+    // con.run().await?;
+    Ok(())
+}
+
 /// 实现一个最简单的 ping-pong 服务，它会对消息 ping 回复 pong，并在五秒后撤回该 pong。
 async fn ping_pong_handler<T: Conversation>(msg: T, bot: Bot) -> Result<()> {
     if msg.as_message().to_string().trim() == "ping" {
@@ -66,24 +91,6 @@ async fn on_group_msg_confirm(group_msg: GroupMessage, bot: Bot) -> Result<()> {
             group_msg.reply("确认失败", &bot).await?;
         }
     }
-    Ok(())
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let (bot, con) = miraie::Bot::new("127.0.0.1:18418", "VERIFY_KEY", QQ(123456)).await?;
-
-    // ping pong 服务对群聊和私聊都进行注册
-    bot.handler(ping_pong_handler::<GroupMessage>)
-        .handler(ping_pong_handler::<FriendMessage>)
-        .handler(on_group_msg_confirm)
-        .command("在吗", |msg: GroupMessage, bot: Bot| async move {
-            msg.reply("嘎哈", &bot).await?;
-            Result::<(), Error>::Ok(())
-        });
-
-    // 取消注释下面一行以运行bot
-    // con.run().await?;
     Ok(())
 }
 ```

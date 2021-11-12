@@ -1,4 +1,7 @@
-use std::future::Future;
+use std::{
+    fmt::{Debug, Display},
+    future::Future,
+};
 use tokio::sync::broadcast;
 
 use super::{func::Func, FromRequest, Request};
@@ -22,9 +25,10 @@ where
 }
 
 #[async_trait]
-impl<A> Return<A> for Result<(), anyhow::Error>
+impl<A, E> Return<A> for Result<(), E>
 where
     A: App,
+    E: Send + Display + Debug,
 {
     async fn on_return(self, _request: Request<A>) {
         if let Err(e) = self {
@@ -51,7 +55,7 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
     /// - `f`: 一个回调接口，其入参均实现了 [`FromRequest`](`crate::msg_framework::FromRequest`)，
     /// 如 [`Message`](crate::prelude::Message), [`FriendMessage`](crate::prelude::FriendMessage),
     /// [`Bot`](crate::Bot) 等。
-    /// 其返回值应该是空（`()`）或 `anyhow::Result<()>`。
+    /// 其返回值应该是空（`()`）或 `Result<()>` 或 `Return<T>` 等，其中 T 可以被转换为 [`MessageChain`](crate::prelude::MessageChain`)。
     fn handler<F, I, Fut>(self, f: F) -> Self
     where
         F: Func<I, Fut>,

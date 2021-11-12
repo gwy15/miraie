@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Display};
+
 use crate::messages::MessageChain;
 use crate::msg_framework::{Request, Return};
 use crate::prelude::{Bot, Conversation};
@@ -31,9 +33,10 @@ where
 }
 
 #[async_trait]
-impl<T> Return<Bot> for anyhow::Result<T>
+impl<T, E> Return<Bot> for Result<T, E>
 where
     T: Into<MessageChain> + Send + 'static,
+    E: Send + Display + Debug,
 {
     async fn on_return(self, request: Request<Bot>) {
         match self {
