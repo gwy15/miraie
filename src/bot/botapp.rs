@@ -1,4 +1,7 @@
-use super::{connection::Connection, KeywordCommandHandler, KeywordCommandHandlers, QQ};
+use super::{
+    connection::Connection, extensions::Extensions, KeywordCommandHandler, KeywordCommandHandlers,
+    QQ,
+};
 use crate::{
     api::ApiRequest,
     messages::{Event, FriendMessage, GroupMessage, Message},
@@ -6,9 +9,11 @@ use crate::{
     App, Error, Result,
 };
 use futures::{Future, Stream, StreamExt};
+use parking_lot::RwLock;
 use serde_json::Value;
 use std::{
     future::ready,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::sync::{broadcast, mpsc};
@@ -17,6 +22,8 @@ use tokio::sync::{broadcast, mpsc};
 /// 内部保存 bot 中的状态，如消息队列、跟连接的沟通、数据库连接等。
 ///
 /// [`Bot`] 可以用来注册消息处理接口、获取机器人的消息流、主动发起调用等。
+///
+/// [`Bot`] 会被共享，它可能会被克隆很多份并在多个线程中被访问。它被设计为 [`Send`]。
 #[derive(Clone)]
 pub struct Bot {
     /// 在 handler 内广播消息，如群消息等
@@ -27,6 +34,8 @@ pub struct Bot {
     response_channel: broadcast::Sender<(i64, Value)>,
     ///
     pub(crate) kw_command_handlers: KeywordCommandHandlers,
+
+    pub(crate) extensions: Arc<RwLock<Extensions>>,
 }
 
 impl crate::msg_framework::App for Bot {
@@ -88,6 +97,7 @@ impl Bot {
             request_channel: request_tx,
             response_channel: response_tx,
             kw_command_handlers: KeywordCommandHandlers::new(),
+            extensions: Arc::new(RwLock::new(Extensions::new())),
         };
 
         // 注册关键词 handler

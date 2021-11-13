@@ -2,6 +2,7 @@
 mod basic_types;
 mod botapp;
 mod connection;
+mod extensions;
 mod keyword_command;
 mod return_handle;
 mod utils;
