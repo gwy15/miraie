@@ -15,7 +15,7 @@ pub mod messages;
 pub mod msg_framework;
 
 pub use api::Api;
-pub use bot::Bot;
+pub use bot::{Bot, Data};
 pub use error::{Error, Result};
 pub use msg_framework::App;
 
@@ -29,6 +29,6 @@ pub mod prelude {
             events, Conversation, Event, FriendMessage, GroupMessage, Message, MessageBlock,
             MessageChain,
         },
-        Api, App, Bot,
+        Api, App, Bot, Data,
     };
 }

@@ -6,6 +6,7 @@ use tokio::sync::broadcast;
 
 use super::{func::Func, FromRequest, Request};
 
+/// 描述回调返回值的处理方式
 #[async_trait]
 pub trait Return<A>
 where
@@ -42,7 +43,7 @@ where
 ///
 /// App 需要提供一个 broadcast 类型的通信信道。
 ///
-pub trait App: Sized + Clone + Send + Sync + 'static {
+pub trait App: Sized + Clone + Send + 'static {
     /// App 内广播的消息类型。对于 [`Bot`](crate::Bot) 来说，传递的是 [`Message`](crate::prelude::Message)。
     type Message: Clone + Send + 'static;
 
@@ -60,7 +61,7 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
     where
         F: Func<I, Fut>,
         I: FromRequest<Self> + Send + 'static,
-        Fut: Future + Send,
+        Fut: Future + Send + 'static,
         Fut::Output: Return<Self>,
     {
         let receiver = self.event_bus().subscribe();
@@ -79,9 +80,9 @@ pub trait App: Sized + Clone + Send + Sync + 'static {
                             app: app.clone(),
                         };
                         if let Some(input) = I::from_request(&request) {
+                            let fut = (f).call(input);
                             let fut = async move {
-                                let ret = (f).call(input).await;
-                                ret.on_return(request).await;
+                                fut.await.on_return(request).await;
                             };
                             tokio::spawn(fut);
                         };

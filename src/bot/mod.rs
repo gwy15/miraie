@@ -2,6 +2,7 @@
 mod basic_types;
 mod botapp;
 mod connection;
+mod data;
 mod extensions;
 mod keyword_command;
 mod return_handle;
@@ -10,6 +11,7 @@ mod utils;
 pub use basic_types::*;
 pub use botapp::Bot;
 pub use connection::Connection;
+pub use data::Data;
 pub(crate) use keyword_command::{KeywordCommandHandler, KeywordCommandHandlers};
 
 type WebsocketStream = async_tungstenite::WebSocketStream<async_tungstenite::tokio::ConnectStream>;

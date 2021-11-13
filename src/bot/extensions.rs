@@ -15,6 +15,7 @@ pub struct Extensions {
     map: HashMap<TypeId, BoxedAny>,
 }
 
+#[allow(unused)]
 impl Extensions {
     pub fn new() -> Self {
         Self::default()
@@ -26,7 +27,7 @@ impl Extensions {
             .and_then(downcast_owned)
     }
 
-    pub fn contains<T: Send + 'static>(&self) -> bool {
+    pub fn contains<T: 'static>(&self) -> bool {
         self.map.contains_key(&TypeId::of::<T>())
     }
 

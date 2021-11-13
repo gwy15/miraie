@@ -5,6 +5,11 @@ use miraie::{messages::events::Approvable, prelude::*};
 use std::time::Duration;
 use tokio::time::sleep;
 
+#[derive(Debug)]
+pub struct Config {
+    name: String,
+}
+
 /// 实现一个最简单的 ping-pong 服务，它会对消息 ping 回复 pong，并在五秒后撤回该 pong。
 async fn ping_pong_handler<T: Conversation>(msg: T, bot: Bot) -> Result<()> {
     if msg.as_message().to_string().trim() == "ping" {
@@ -111,7 +116,15 @@ async fn main() -> Result<()> {
         .handler(ping_pong_handler::<FriendMessage>)
         .handler(on_group_msg_confirm)
         .handler(on_event)
-        .handler(on_group_invite);
+        .handler(on_group_invite)
+        // 可以使用 `bot_data` 注册配置/数据库连接池等，并使用 `Data` 进行提取。
+        .bot_data(Data::new(Config {
+            name: "A-SOUL!".to_string(),
+        }))
+        .command("配置", |config: Data<Config>| async move {
+            // 会在任何聊天中回复【A-SOUL!】
+            config.name.clone()
+        });
 
     con.run().await?;
     Ok(())

@@ -1,7 +1,7 @@
 use core::future::Future;
 
 /// `Func` 主要是解决 rust 只提供 `Fn(T) -> O` 不提供 `Fn<((T,), O)>` 的问题
-pub trait Func<I, Fut>: Send + Sync + Clone + Copy + 'static
+pub trait Func<I, Fut>: Send + Sync + 'static
 where
     I: Send + 'static,
     Fut: Future + Send,
@@ -17,7 +17,7 @@ mod _impl_func {
         (($($Ts:ident),*), ($($Ns:tt),*)) => {
             impl<F, Fut, $($Ts,)*> Func<( $($Ts, )*), Fut> for F
             where
-                F: Fn( $($Ts,)* ) -> Fut + Send + Sync + Clone + Copy + 'static,
+                F: Fn( $($Ts,)* ) -> Fut + Send + Sync + 'static,
                 $(
                     $Ts: Send + 'static,
                 )*

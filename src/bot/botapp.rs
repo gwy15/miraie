@@ -272,6 +272,11 @@ impl Bot {
             }
         }
     }
+
+    pub fn bot_data<U: Send + Sync + 'static>(self, ext: U) -> Self {
+        self.extensions.write().insert(ext);
+        self
+    }
 }
 
 impl crate::msg_framework::FromRequest<Bot> for Bot {
