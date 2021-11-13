@@ -51,9 +51,6 @@ impl<T: ?Sized + 'static> FromRequest<Bot> for Data<T> {
     fn from_request(request: &crate::msg_framework::Request<Bot>) -> Option<Self> {
         let app = &request.app;
         let ext = app.extensions.read();
-        match ext.get::<Data<T>>() {
-            Some(v) => Some(v.clone()),
-            None => None,
-        }
+        ext.get::<Data<T>>().cloned()
     }
 }
