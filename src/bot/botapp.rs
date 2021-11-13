@@ -273,6 +273,18 @@ impl Bot {
         }
     }
 
+    /// 可以使用 `bot_data` 注册配置/数据库连接池等，并使用 [`crate::Data`] 进行提取。
+    ///
+    /// ```rust,ignore
+    /// bot
+    ///     .bot_data(Data::new(Config {
+    ///         name: "A-SOUL!".to_string(),
+    ///     }))
+    ///     .command("配置", |config: Data<Config>| async move {
+    ///         // 会在任何聊天中回复【A-SOUL!】
+    ///         config.name.clone()
+    ///     });
+    /// ```
     pub fn bot_data<U: Send + Sync + 'static>(self, ext: U) -> Self {
         self.extensions.write().insert(ext);
         self

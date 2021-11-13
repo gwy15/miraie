@@ -35,17 +35,37 @@ pub trait ApiRequest: Send {
 }
 
 #[derive(Serialize)]
-struct ApiRequestData<T: Serialize> {
+pub struct ApiRequestData<T: Serialize> {
     #[serde(rename = "syncId")]
-    sync_id: i64,
+    pub sync_id: i64,
 
-    command: &'static str,
+    pub command: &'static str,
 
     #[serde(rename = "subCommand")]
-    sub_command: Option<&'static str>,
+    pub sub_command: Option<&'static str>,
 
-    content: T,
+    pub content: T,
 }
+
+/// 用于自动实现跟 mirai-http-api 的 binding code
+///
+/// 如果你有需要的跟 mirai-http-api 的 API 请求但是本 crate 没实现，你可以使用这个宏在非侵入的形势下自动实现。
+///
+/// # Example
+/// ```
+/// use miraie::prelude::*;
+/// use miraie::messages::group;
+/// use serde::Serialize;
+///
+/// #[derive(Serialize)]
+/// pub struct Request {
+///     pub target: QQ,
+/// }
+///
+/// pub type Response = Vec<group::GroupMember>;
+///
+/// miraie::api!(command = "memberList", Request, Response);
+/// ```
 
 #[macro_export]
 macro_rules! api {
@@ -87,12 +107,12 @@ macro_rules! api {
             }
         }
         // 定义返回的类型
-        crate::api!(@def_resp field = $field);
+        $crate::api!(@def_resp field = $field);
 
         impl $crate::api::Api for $req {
             type Response = $rsp;
             fn process_response(value: serde_json::Value) -> $crate::Result<Self::Response> {
-                trace!("process value {:?} as response", value);
+                log::trace!("process value {:?} as response", value);
                 let resp: ApiResponseData::<$rsp> = serde_json::from_value(value)?;
                 if resp.code != 0 {
                     return Err($crate::Error::Request {
@@ -105,7 +125,7 @@ macro_rules! api {
         }
     };
     (@def_resp field = "data") => {
-        #[derive(Deserialize)]
+        #[derive(serde::Deserialize)]
         struct ApiResponseData<T> {
             code: i32,
             msg: String,
@@ -113,7 +133,7 @@ macro_rules! api {
         }
     };
     (@def_resp field = "flatten") => {
-        #[derive(Deserialize)]
+        #[derive(serde::Deserialize)]
         struct ApiResponseData<T> {
             code: i32,
             msg: String,
@@ -122,7 +142,7 @@ macro_rules! api {
         }
     };
     (@def_resp field = "default") => {
-        #[derive(Deserialize)]
+        #[derive(serde::Deserialize)]
         struct ApiResponseData<T> {
             code: i32,
             msg: String,
